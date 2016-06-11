@@ -19,12 +19,16 @@
   "keywords": [
     "aframe",
     "aframe-component",
+    "lsystem",
+    "turtle graphics",
+    "l-system",
+    "fractal",
     "aframe-vr",
     "vr",
     "mozvr",
     "webvr"
   ],
-  "author": "Kevin Ngo <me@ngokevin.com>",
+  "author": "Tom Brewe <tom@nylkiway.net>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ngokevin/aframe-component-boilerplate/issues"
@@ -41,5 +45,8 @@
     "shelljs": "^0.7.0",
     "shx": "^0.1.1",
     "webpack": "^1.13.0"
+  },
+  "dependencies": {
+    "lindenmayer": "^1.0.0"
   }
 }

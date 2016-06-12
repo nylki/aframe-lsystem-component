@@ -4,15 +4,14 @@ if (typeof AFRAME === 'undefined') {
 
 var LSystem;
 
-// Get the component absolute location to properly
-// init a web worker from there.
-var currentScriptLocation = document.currentScript.src;
-workerScriptLocation = currentScriptLocation.substr(0, currentScriptLocation.lastIndexOf('/') + 1) + 'worker.js';
-console.log(workerScriptLocation);
-
+// As we use webpack for compiling the source, it's used to bundle the
+// web worker into a blob via: https://github.com/webpack/worker-loader
+// Which works without additional changes, besides using `require` inside
+// the worker instead of importScripts().
+var LSystemWorker = require("worker?inline!./LSystemWorker.js");
 
 /**
- * Example component for A-Frame.
+ * Lindenmayer-System component for A-Frame.
  */
 AFRAME.registerComponent('lsystem', {
   schema: {
@@ -27,7 +26,7 @@ AFRAME.registerComponent('lsystem', {
       // return an array of production tuples ([[from, to], ['F', 'F+F']])
       parse: function (value) {
         return value.split(' ').map(function (splitValue) {
-          return splitValue.split('->');
+          return splitValue.split('=>');
         })
       }
     },
@@ -36,7 +35,7 @@ AFRAME.registerComponent('lsystem', {
       type: 'string',
       parse: function (value) {
         return value.split(' ').map(function (splitValue) {
-          return splitValue.split('->');
+          return splitValue.split('=>');
         })
       }
     },
@@ -69,6 +68,8 @@ AFRAME.registerComponent('lsystem', {
     if(LSystem === undefined) {
       LSystem = require('lindenmayer');
     }
+    
+    this.worker = new LSystemWorker();
     
     this.stack = [];
     this.X = new THREE.Vector3(1, 0, 0);
@@ -140,6 +141,7 @@ AFRAME.registerComponent('lsystem', {
     for (p of this.data.productions) {
       this.LSystem.setProduction(p[0], p[1]);
     }
+    console.log(this.data);
     console.log('before iteration');
 
     this.updateTurtleGraphics();
@@ -157,8 +159,8 @@ AFRAME.registerComponent('lsystem', {
 		
 		colorIndex = 0; // Reset color index
 		angle = this.data.angle;
-    this.lineWidth = 0.5;
-    this.lineLength = 3;
+    this.lineWidth = 0.001;
+    this.lineLength = 0.25;
 		// Set quaternions based on angle slider
 		this.xPosRotation.setFromAxisAngle( this.X, (Math.PI / 180) * angle );
 		this.xNegRotation.setFromAxisAngle( this.X, (Math.PI / 180) * -angle );
@@ -188,6 +190,7 @@ AFRAME.registerComponent('lsystem', {
     this.el.setObject3D('mesh', this.fullModel);
 		
     this.LSystem.iterate(this.data.iterations);
+    console.log(this.LSystem.getString());
 		this.LSystem.final();
 	},
   

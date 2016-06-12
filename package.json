@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "browserify examples/main.js -o examples/build.js",
-    "dev": "budo examples/main.js:build.js --dir examples --port 8000 --live --open",
-    "dist": "webpack index.js dist/aframe-lsystem-component.js && webpack -p index.js dist/aframe-lsystem-component.min.js",
+    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-v0.2.0.min.js examples/aframe-v0.2.0.min.js",
+    "dist": "webpack --module-bind worker-loader index.js dist/aframe-lsystem-component.js && webpack --module-bind worker-loader -p index.js dist/aframe-lsystem-component.min.js",
     "postpublish": "npm run dist",
     "preghpages": "npm run build && shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
     "ghpages": "npm run preghpages && ghpages -p gh-pages",
@@ -44,7 +44,8 @@
     "randomcolor": "^0.4.4",
     "shelljs": "^0.7.0",
     "shx": "^0.1.1",
-    "webpack": "^1.13.0"
+    "webpack": "^1.13.0",
+    "worker-loader": "^0.7.0"
   },
   "dependencies": {
     "lindenmayer": "^1.0.0"

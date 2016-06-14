@@ -69,8 +69,6 @@ AFRAME.registerComponent('lsystem', {
       LSystem = require('lindenmayer');
     }
     
-    this.worker = new LSystemWorker();
-    
     this.stack = [];
     this.X = new THREE.Vector3(1, 0, 0);
     this.Y = new THREE.Vector3(0, 1, 0);
@@ -122,6 +120,8 @@ AFRAME.registerComponent('lsystem', {
 			}
     });
     
+    this.initWorker();
+    
   },
 
   /**
@@ -141,10 +141,27 @@ AFRAME.registerComponent('lsystem', {
     for (p of this.data.productions) {
       this.LSystem.setProduction(p[0], p[1]);
     }
-    console.log(this.data);
-    console.log('before iteration');
-
-    this.updateTurtleGraphics();
+    
+    var params = {
+      axiom: 		this.data.axiom,
+      productions: this.data.productions,
+      iterations: this.data.iterations
+    }
+    
+    if(Date.now() - this.worker.startTime > 1000 ) {
+      // if we got user input, but worker is running for over a second
+      // terminate old worker and start new one.
+      this.worker.terminate();
+      this.initWorker();
+    }
+    // post params to worker
+    this.worker.startTime = Date.now();
+    this.worker.postMessage(params);
+  },
+  
+  initWorker: function() {
+    this.worker = new LSystemWorker();
+    this.worker.onmessage = this.onWorkerUpdate.bind(this);
   },
   
   pushSegment: function() {
@@ -189,8 +206,6 @@ AFRAME.registerComponent('lsystem', {
 		this.fullModel = new THREE.Mesh(new THREE.Geometry(), material);
     this.el.setObject3D('mesh', this.fullModel);
 		
-    this.LSystem.iterate(this.data.iterations);
-    console.log(this.LSystem.getString());
 		this.LSystem.final();
 	},
   

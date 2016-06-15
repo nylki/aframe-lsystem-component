@@ -8,10 +8,10 @@ A L-System component for [A-Frame](https://aframe.io).
 | ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
 | axiom                  | (string) Initiator/initial string/axiom.                                                              | 'F'           |
 | production             | (string) Productions from->to. Separate by space.                                                     | 'F->FF'       |
-| iterations             | (int) Set the initiator/initial string/axiom.                                                         | 1             |
-| angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | 1             |
-| functionsInProductions | (boolean) Set true to enable parsing of native JS functions.                                          | false         |
-| mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | true          |
+| iterations             | (int) Set the initiator/initial string/axiom.                                                         | `1 `          |
+| angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | `45.0`        |
+| functionsInProductions | (boolean) Set true to enable parsing of native JS functions.                                          | `false`       |
+| mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | `true`        |
 
 
 ### Usage

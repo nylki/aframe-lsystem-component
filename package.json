@@ -4,11 +4,10 @@
   "description": "L-System component for A-Frame.",
   "main": "index.js",
   "scripts": {
-    "build": "browserify examples/main.js -o examples/build.js",
     "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-v0.2.0.min.js examples/aframe-v0.2.0.min.js",
     "dist": "webpack --module-bind worker-loader index.js dist/aframe-lsystem-component.js && webpack --module-bind worker-loader -p index.js dist/aframe-lsystem-component.min.js",
     "postpublish": "npm run dist",
-    "preghpages": "npm run build && shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
+    "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
     "ghpages": "npm run preghpages && ghpages -p gh-pages",
     "unboil": "node scripts/unboil.js"
   },
@@ -31,9 +30,9 @@
   "author": "Tom Brewe <tom@nylkiway.net>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ngokevin/aframe-component-boilerplate/issues"
+    "url": "https://github.com/nylki/aframe-lsystem-boilerplate/issues"
   },
-  "homepage": "https://github.com/ngokevin/aframe-component-boilerplate#readme",
+  "homepage": "https://github.com/nylki/aframe-lsystem-boilerplate#readme",
   "devDependencies": {
     "aframe": "^0.2.0",
     "browserify": "^13.0.0",

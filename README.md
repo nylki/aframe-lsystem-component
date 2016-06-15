@@ -1,12 +1,18 @@
 ## aframe-example-component
 
-A example component for [A-Frame](https://aframe.io).
+A L-System component for [A-Frame](https://aframe.io).
 
 ### Properties
 
-| Property | Description | Default Value |
-| -------- | ----------- | ------------- |
-|          |             |               |
+| Property               | Description                                                                                           | Default Value |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
+| axiom                  | (string) Initiator/initial string/axiom.                                                              | 'F'           |
+| production             | (string) Productions from->to. Separate by space.                                                     | 'F->FF'       |
+| iterations             | (int) Set the initiator/initial string/axiom.                                                         | 1             |
+| angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | 1             |
+| functionsInProductions | (boolean) Set true to enable parsing of native JS functions.                                          | false         |
+| mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | true          |
+
 
 ### Usage
 
@@ -18,12 +24,12 @@ Install and use by directly including the [browser files](dist):
 <head>
   <title>My A-Frame Scene</title>
   <script src="https://aframe.io/releases/0.2.0/aframe.min.js"></script>
-  <script src="https://rawgit.com/ngokevin/aframe-component-boilerplate/master/dist/aframe-example-component.min.js"></script>
+  <script src="https://raw.githubusercontent.com/nylki/aframe-lsystem-component/master/dist/aframe-lsystem-component.min.js"></script>
 </head>
 
 <body>
   <a-scene>
-    <a-entity example="exampleProp: exampleVal"></a-entity>
+    <a-entity lsystem="axiom: F+F; productions: F->F-F++F"></a-entity>
   </a-scene>
 </body>
 ```
@@ -40,5 +46,5 @@ Then register and use.
 
 ```js
 require('aframe');
-require('aframe-example-component');
+require('aframe-lsystem-component');
 ```

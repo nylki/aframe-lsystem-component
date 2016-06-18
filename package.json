@@ -4,7 +4,7 @@
   "description": "L-System component for A-Frame.",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-v0.2.0.min.js examples/aframe-v0.2.0.min.js",
+    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe.js examples/aframe.js",
     "dist": "webpack --module-bind worker-loader index.js dist/aframe-lsystem-component.js && webpack --module-bind worker-loader -p index.js dist/aframe-lsystem-component.min.js",
     "postpublish": "npm run dist",
     "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
@@ -34,10 +34,9 @@
   },
   "homepage": "https://github.com/nylki/aframe-lsystem-component#readme",
   "devDependencies": {
-    "aframe": "^0.2.0",
+    "aframe": "git+https://github.com/aframevr/aframe.git",
     "browserify": "^13.0.0",
     "browserify-css": "^0.9.1",
-    "budo": "^8.2.2",
     "ghpages": "^0.0.8",
     "inquirer": "^1.0.2",
     "randomcolor": "^0.4.4",
@@ -47,6 +46,6 @@
     "worker-loader": "^0.7.0"
   },
   "dependencies": {
-    "lindenmayer": "^1.0.0"
+    "lindenmayer": "^1.0.1"
   }
 }

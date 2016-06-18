@@ -4,6 +4,7 @@ if (typeof AFRAME === 'undefined') {
 
 var LSystem;
 
+
 // As we use webpack for compiling the source, it's used to bundle the
 // web worker into a blob via: https://github.com/webpack/worker-loader
 // Which works without additional changes, besides using `require` inside
@@ -26,28 +27,41 @@ AFRAME.registerComponent('lsystem', {
       // return an array of production tuples ([[from, to], ['F', 'F+F']])
       parse: function (value) {
         return value.split(' ').map(function (splitValue) {
-          return splitValue.split('=>');
+          return splitValue.split(':');
         })
       }
     },
     
-    baseObjects: {
+    segmentMixins: {
       type: 'string',
       parse: function (value) {
         return value.split(' ').map(function (splitValue) {
-          return splitValue.split('=>');
+          return splitValue.split(':');
         })
       }
     },
     
     iterations: {
       type: 'int',
-      default: 2
+      default: 1
     },
     
     angle: {
       type: 'number',
-      default: 45
+      default: 45.0
+    },
+    
+    /* For fixed segment length */
+    segmentLength: {
+      type: 'number',
+      default: 1.125
+    },
+    
+    /* Translate a segment, based on it's bonding box, may not be optimal!
+      TODO: implementation!
+     */
+    dynamicSegmentLength: {
+      default: true
     },
     
     mergeGeometries: {
@@ -69,6 +83,8 @@ AFRAME.registerComponent('lsystem', {
       LSystem = require('lindenmayer');
     }
     
+    this.sceneEl = document.querySelector('a-scene');
+    
     this.stack = [];
     this.X = new THREE.Vector3(1, 0, 0);
     this.Y = new THREE.Vector3(0, 1, 0);
@@ -89,7 +105,7 @@ AFRAME.registerComponent('lsystem', {
       axiom: 'FF+F',
       productions: {'F': 'FF'},
       finals: {
-				'F': self.pushSegment.bind(self),
+				'F': () => {self.pushSegment.bind(self, 'F')()},
 				'+': () => { self.currentSegment.quaternion.multiply(self.yPosRotation)},
 				'-': () => { self.currentSegment.quaternion.multiply(self.yNegRotation)},
 				'&': () => { self.currentSegment.quaternion.multiply(self.zNegRotation)},
@@ -129,18 +145,38 @@ AFRAME.registerComponent('lsystem', {
    * Generally modifies the entity based on the data.
    */
   update: function (oldData) {
-    
     // var diffData = diff(data, oldData || {});
     // console.log(diffData);
     
     // TODO: Check if only angle changed or axiom or productions
     //
+    console.log('update');
+    this.el.removeObject3D('mesh');
+    if(this.mixinGroups) {
+      for (let group of this.mixinGroups) {
+        console.log(group);
+        this.el.removeChild(group[1]);
+      }
+    }
+    
+    
+    // Collect mixin info
+    if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
+      this.mixinIDForSymbol = new Map();
+      this.mixinGroups = new Map();
+      for (let segmentMixin of this.data.segmentMixins) {
+        
+        this.mixinIDForSymbol.set(segmentMixin[0], segmentMixin[1]);
+        let segmentGroup = document.createElement('a-entity');
+        segmentGroup.setAttribute('id', segmentMixin[1] + '-group');
+        segmentGroup.setAttribute('position', { x: 0, y: 0, z: 0});
+        this.mixinGroups.set(segmentMixin[0], segmentGroup);
+        this.el.appendChild(segmentGroup);
+        
+      }
+    }
     
     this.LSystem.setAxiom(this.data.axiom);
-    // this.LSystem.clearProductions();
-    for (p of this.data.productions) {
-      this.LSystem.setProduction(p[0], p[1]);
-    }
     
     var params = {
       axiom: 		this.data.axiom,
@@ -164,20 +200,60 @@ AFRAME.registerComponent('lsystem', {
     this.worker.onmessage = this.onWorkerUpdate.bind(this);
   },
   
-  pushSegment: function() {
-    let newSegment = this.currentSegment.clone();
-    newSegment.matrixAutoUpdate = false;
-    newSegment.updateMatrix();
-    this.fullModel.geometry.merge(newSegment.geometry, newSegment.matrix);
-    this.currentSegment.translateX(-(this.lineLength));
+  pushSegment: function(symbol) {
+    let self = this;
+    // TODO: When no mixins defined, or mixins are very basic, or forced by flag
+    // then do a faster geometry merge without creating entities first
+    
+    // let newSegment = new THREE.Mesh( this.geometry );
+    
+    // let newSegment = this.currentSegment.clone();
+    // newSegment.matrixAutoUpdate = false;
+    // newSegment.updateMatrix();
+    
+    let newSegment = document.createElement('a-entity');
+    
+    newSegment.setAttribute('mixin', this.mixinIDForSymbol.get(symbol));
+    
+
+    let currentQuaternion = this.currentSegment.quaternion.clone();
+    let currentPosition = this.currentSegment.position.clone();
+
+    newSegment.addEventListener('loaded', function (e) {
+      newSegment.object3D.quaternion.copy(currentQuaternion);
+      newSegment.object3D.position.copy(currentPosition);
+      newSegment.setAttribute('geometry', 'skipCache', true);
+      newSegment.setAttribute('geometry', 'buffer', false);
+      newSegment.setAttribute('geometry', 'mergeTo', '#' + self.mixinIDForSymbol.get(symbol) + '-group');
+
+      // newSegment.addEventListener('geometry-merged', function (e) {
+      //   console.log('merged.');
+      //
+      //});
+    });
+
+    this.sceneEl.appendChild(newSegment);
+    
+    
+    
+    // TODO: if mergeGeometries === false, this.modelGroups.get('symbol').push(newSegment)
+    
+    // this.modelGroups.get(symbol).geometry.merge(newSegment.geometry, newSegment.matrix);
+    
+    // ALTERNATIVE MAYBE?: but use new merge api.
+    // and define #id of the fullModel to merge into.
+    // this.modelGroups.geometry.merge(newSegment.geometry, newSegment.matrix);
+    
+    this.currentSegment.translateX(-(this.data.segmentLength));
   },
   
   updateTurtleGraphics: function() {
-		
+		console.log('updateTurtleGraphics');
+
 		colorIndex = 0; // Reset color index
 		angle = this.data.angle;
-    this.lineWidth = 0.001;
-    this.lineLength = 0.25;
+    this.lineWidth = 0.0005;
+    this.lineLength = 0.125;
 		// Set quaternions based on angle slider
 		this.xPosRotation.setFromAxisAngle( this.X, (Math.PI / 180) * angle );
 		this.xNegRotation.setFromAxisAngle( this.X, (Math.PI / 180) * -angle );
@@ -189,24 +265,36 @@ AFRAME.registerComponent('lsystem', {
 		this.zPosRotation.setFromAxisAngle( this.Z, (Math.PI / 180) * angle );
 		this.zNegRotation.setFromAxisAngle( this.Z, (Math.PI / 180) * -angle );
 		
-		let geometry = new THREE.CylinderGeometry(this.lineWidth, this.lineWidth, this.lineLength, 3);
-		geometry.rotateZ((Math.PI / 180) * 90);
-		geometry.translate( -(this.lineLength/2), 0, 0 );
-		for (let face of geometry.faces) {
+		this.geometry = new THREE.CylinderGeometry(this.lineWidth, this.lineWidth, this.lineLength, 3);
+		this.geometry.rotateZ((Math.PI / 180) * 90);
+		this.geometry.translate( -(this.data.segmentLength/2), 0, 0 );
+		for (let face of this.geometry.faces) {
 			face.color.setHex(this.colors[colorIndex]);
 		}
-		geometry.colorsNeedUpdate = true;
+		this.geometry.colorsNeedUpdate = true;
 
-		this.currentSegment = new THREE.Mesh( geometry );
+    // TODO: Make currentSegment only an empty shell Object3D, fill with
+    // Geometry only when pushing a new segment, then deciding by smybol (F, L, whatever)
+    // Bzw. on pushSegment create new THREE.Mesh( chosengeometry ), _copy_ the matrix
+    // from currentSegment into it, then merge geometry into according fullModel (eg. branches, leaves) to apply individual materials.
+    this.currentSegment = new THREE.Object3D();
+
 		this.currentSegment.matrixAutoUpdate = false;
     let material = new THREE.MeshLambertMaterial({
       shading: THREE.SmoothShading,
       vertexColors: THREE.FaceColors
     });
-		this.fullModel = new THREE.Mesh(new THREE.Geometry(), material);
-    this.el.setObject3D('mesh', this.fullModel);
+
+
+		// this.fullModel = new THREE.Mesh(new THREE.Geometry(), material);
+    // this.el.setObject3D('mesh', this.fullModel);
 		
 		this.LSystem.final();
+    // TODO: then add all fullModels (branches, leaves) into object3d
+    //
+    // for (let fullModel of fullModels) {
+    //   this.el.object3D.add(fullModel);
+    // }
 	},
   
   

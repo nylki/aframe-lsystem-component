@@ -150,7 +150,9 @@ AFRAME.registerComponent('lsystem', {
     
     // TODO: Check if only angle changed or axiom or productions
     //
-    console.log('update');
+    console.log('update!!!');
+    console.log(this);
+    console.log(this.data);
     this.el.removeObject3D('mesh');
     if(this.mixinGroups) {
       for (let group of this.mixinGroups) {
@@ -168,6 +170,8 @@ AFRAME.registerComponent('lsystem', {
         
         this.mixinIDForSymbol.set(segmentMixin[0], segmentMixin[1]);
         let segmentGroup = document.createElement('a-entity');
+        segmentGroup.setAttribute('mixin', segmentMixin[1]);
+        segmentGroup.setAttribute('geometry', 'buffer', false);
         segmentGroup.setAttribute('id', segmentMixin[1] + '-group');
         segmentGroup.setAttribute('position', { x: 0, y: 0, z: 0});
         this.mixinGroups.set(segmentMixin[0], segmentGroup);

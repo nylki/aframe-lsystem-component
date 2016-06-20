@@ -220,7 +220,12 @@ AFRAME.registerComponent('lsystem', {
     let currentPosition = this.currentSegment.position.clone();
 
     newSegment.addEventListener('loaded', function (e) {
+      // Offset child element of object3D, to rotate around end point
+      // IMPORTANT: It may change that A-Frame puts objects into a group
+      // FIXME: offset all children instead of the first, in case there are multiple
+      // geometries in there?!?
       newSegment.object3D.children[0].translateX(-self.data.segmentLength/2);
+      
       newSegment.object3D.quaternion.copy(currentQuaternion);
       newSegment.object3D.position.copy(currentPosition);
       newSegment.setAttribute('geometry', 'skipCache', true);

@@ -7,13 +7,15 @@
   <body>
     <a-scene>
       <a-assets>
-        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #dff5e9; metalness:0.2"></a-mixin>
+        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #00ff00; metalness:0.2"></a-mixin>
       </a-assets>
       
       <a-entity ></a-entity>
       
       <!-- <a-entity geometry="primitive: box" collada-model="url(model.dae)" material="color: #C03546"></a-entity> -->
-      <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; angle: 90.0; iterations: 1; segmentLength: 1.0" position="4 0 3"></a-entity>
+      <!-- <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; mergeGeometries:true; angle: 90.0; iterations: 1; segmentLength: 1.0" position="0 0 3"></a-entity> -->
+      
+      <a-entity lsystem="axiom: F; productions: F:FFF+F; segmentMixins: F:line; mergeGeometries:false; angle: 90.0; iterations: 1; segmentLength: 1.0" position="1 1 1"></a-entity>
 
       
       <!-- <a-entity geometry="primitive: box" position="0 0 0" material="color: blue"> </a-entity> -->

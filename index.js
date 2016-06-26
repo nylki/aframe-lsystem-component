@@ -66,7 +66,7 @@ AFRAME.registerComponent('lsystem', {
     
     mergeGeometries: {
       type: 'boolean',
-      default: true
+      default: false
     },
     
     functionsInProductions: {
@@ -84,8 +84,13 @@ AFRAME.registerComponent('lsystem', {
     }
     
     this.sceneEl = document.querySelector('a-scene');
-    
-    this.stack = [];
+    this.xPosRotation = new THREE.Quaternion();
+    this.xNegRotation = new THREE.Quaternion();
+    this.yPosRotation = new THREE.Quaternion();
+    this.yNegRotation = new THREE.Quaternion();
+    this.zPosRotation = new THREE.Quaternion();
+    this.zNegRotation = new THREE.Quaternion();
+    this.yReverseRotation = new THREE.Quaternion();
     this.X = new THREE.Vector3(1, 0, 0);
     this.Y = new THREE.Vector3(0, 1, 0);
     this.Z = new THREE.Vector3(0, 0, 1);
@@ -99,6 +104,7 @@ AFRAME.registerComponent('lsystem', {
     this.colors = [0x8c651b, 0x7d9322, 0x3d9322];
     this.colorIndex = 0;
     
+    
     var self = this;
     
     this.LSystem = new LSystem({
@@ -106,33 +112,33 @@ AFRAME.registerComponent('lsystem', {
       productions: {'F': 'FF'},
       finals: {
 				'F': () => {self.pushSegment.bind(self, 'F')()},
-				'+': () => { self.currentSegment.quaternion.multiply(self.yPosRotation)},
-				'-': () => { self.currentSegment.quaternion.multiply(self.yNegRotation)},
-				'&': () => { self.currentSegment.quaternion.multiply(self.zNegRotation)},
-				'^': () => { self.currentSegment.quaternion.multiply(self.zPosRotation)},
-				'\\': () =>{ self.currentSegment.quaternion.multiply(self.xNegRotation)},
-				'<': () => { self.currentSegment.quaternion.multiply(self.xNegRotation)},
-				'/': () => { self.currentSegment.quaternion.multiply(self.xPosRotation)},
-				'>': () => { self.currentSegment.quaternion.multiply(self.xPosRotation)},
-				'|': () => { self.currentSegment.quaternion.multiply(self.yReverseRotation)},
+				'+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
+				'-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+				'&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
+				'^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
+				'\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+				'<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+				'/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+				'>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+				'|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
 				'!': () => {
-					self.currentSegment.scale.set(self.currentSegment.scale.x, self.currentSegment.scale.y + 0.2, self.currentSegment.scale.z + 0.2);
+					self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
 					colorIndex = Math.min(colors.length - 1, colorIndex + 1);
-					for (let face of self.currentSegment.geometry.faces) {
+					for (let face of self.transformationSegment.geometry.faces) {
 						face.color.setHex(colors[colorIndex]);
 					}
-					self.currentSegment.geometry.colorsNeedUpdate = true;
+					self.transformationSegment.geometry.colorsNeedUpdate = true;
 				},
 				'\'': () => {
-					self.currentSegment.scale.set(self.currentSegment.scale.x, self.currentSegment.scale.y - 0.2, self.currentSegment.scale.z - 0.2);
+					self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
 					colorIndex = Math.max(0, colorIndex - 1);
-					for (let face of self.currentSegment.geometry.faces) {
+					for (let face of self.transformationSegment.geometry.faces) {
 						face.color.setHex(colors[colorIndex]);
 					}
-					self.currentSegment.geometry.colorsNeedUpdate = true;
+					self.transformationSegment.geometry.colorsNeedUpdate = true;
 				},
-				'[': () => { self.stack.push(self.currentSegment.clone()) },
-				']': () => { self.currentSegment = self.stack.pop() }
+				'[': () => { self.stack.push(self.transformationSegment.clone()) },
+				']': () => { self.transformationSegment = self.stack.pop() }
 			}
     });
     
@@ -150,53 +156,88 @@ AFRAME.registerComponent('lsystem', {
     
     // TODO: Check if only angle changed or axiom or productions
     //
-    console.log('update!!!');
-    console.log(this);
-    console.log(this.data);
-    this.el.removeObject3D('mesh');
-    if(this.mixinGroups) {
-      for (let group of this.mixinGroups) {
-        console.log(group);
-        this.el.removeChild(group[1]);
-      }
-    }
     
+    let self = this;
+    
+    this.el.removeObject3D('mesh');
+
+    // The main segment used for saving transformations (rotation, translation, scale(?))
+    this.transformationSegment = new THREE.Object3D();
+    
+    // We push copies of this.transformationSegment on branch symbols inside this array.
+    this.stack = [];
+    
+    // Map for remembering which mixin belongs to which symbol
+    // (parsed further below from element attributes)
+    this.mixinIDForSymbol = new Map();
+    
+    // Map for remembering the elements holding differnt segment types
+    this.segmentGroups = new Map();
+    
+    // Map for buffering geometries for use in pushSegments()
+    // when merging geometries ourselves and not by appending a `mixin` attributes,
+    // as done with `mergeGeometry = false`.
+    this.segmentObjects3D = new Map();
+    
+    let loadingPromises = [];
+    
+    while (this.el.firstChild) {
+        this.el.removeChild(this.el.firstChild);
+    }
     
     // Collect mixin info
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
-      this.mixinIDForSymbol = new Map();
-      this.mixinGroups = new Map();
+
       for (let segmentMixin of this.data.segmentMixins) {
         
         this.mixinIDForSymbol.set(segmentMixin[0], segmentMixin[1]);
         let segmentGroup = document.createElement('a-entity');
-        segmentGroup.setAttribute('mixin', segmentMixin[1]);
-        segmentGroup.setAttribute('geometry', 'buffer', false);
-        segmentGroup.setAttribute('id', segmentMixin[1] + '-group');
-        segmentGroup.setAttribute('position', { x: 0, y: 0, z: 0});
-        this.mixinGroups.set(segmentMixin[0], segmentGroup);
-        this.el.appendChild(segmentGroup);
         
+        loadingPromises.push(new Promise((resolve, reject) => {
+          
+          if(this.data.mergeGeometries === true) {
+            segmentGroup.setAttribute('geometry', 'buffer:false;');
+            segmentGroup.setAttribute('mixin', segmentMixin[1]);
+            segmentGroup.addEventListener('loaded', function (e) {
+              self.segmentObjects3D.set(segmentMixin[0], segmentGroup.getObject3D('mesh').clone());
+              self.segmentGroups.set(segmentMixin[0], segmentGroup);
+              resolve();
+            });
+          } else {
+            resolve();
+          }
+          
+          segmentGroup.setAttribute('id', segmentMixin[1] + '-group');
+          this.el.appendChild(segmentGroup);
+          this.segmentGroups.set(segmentMixin[0], segmentGroup);
+          
+        }));
+
       }
     }
-    
-    this.LSystem.setAxiom(this.data.axiom);
     
     var params = {
       axiom: 		this.data.axiom,
       productions: this.data.productions,
       iterations: this.data.iterations
     }
-    
-    if(Date.now() - this.worker.startTime > 1000 ) {
-      // if we got user input, but worker is running for over a second
-      // terminate old worker and start new one.
-      this.worker.terminate();
-      this.initWorker();
-    }
+
     // post params to worker
-    this.worker.startTime = Date.now();
-    this.worker.postMessage(params);
+    // After all groups have been created, post to the worker.
+    
+    Promise.all(loadingPromises).then(() => {
+      console.log('all groups loaded.');
+      if(Date.now() - this.worker.startTime > 1000 ) {
+        // if we got user input, but worker is running for over a second
+        // terminate old worker and start new one.
+        this.worker.terminate();
+        this.initWorker();
+      }
+      
+      this.worker.startTime = Date.now();
+      this.worker.postMessage(params);
+    })
+
   },
   
   initWorker: function() {
@@ -206,59 +247,44 @@ AFRAME.registerComponent('lsystem', {
   
   pushSegment: function(symbol) {
     let self = this;
-    // TODO: When no mixins defined, or mixins are very basic, or forced by flag
-    // then do a faster geometry merge without creating entities first
+    let currentQuaternion = self.transformationSegment.quaternion.clone();
+    let currentPosition = self.transformationSegment.position.clone();
     
-    // let newSegment = new THREE.Mesh( this.geometry );
-    
-    // let newSegment = this.currentSegment.clone();
-    // newSegment.matrixAutoUpdate = false;
-    // newSegment.updateMatrix();
-    
-    let newSegment = document.createElement('a-entity');
-    
-    newSegment.setAttribute('mixin', this.mixinIDForSymbol.get(symbol));
-    
-
-    let currentQuaternion = this.currentSegment.quaternion.clone();
-    let currentPosition = this.currentSegment.position.clone();
-
-    newSegment.addEventListener('loaded', function (e) {
-      // Offset child element of object3D, to rotate around end point
-      // IMPORTANT: It may change that A-Frame puts objects into a group
-      // FIXME: offset all children instead of the first, in case there are multiple
-      // geometries in there?!?
-      newSegment.object3D.children[0].translateX(-self.data.segmentLength/2);
+    if(this.data.mergeGeometries === false) {
+      let newSegment = document.createElement('a-entity');
+      newSegment.setAttribute('mixin', this.mixinIDForSymbol.get(symbol));
+      newSegment.addEventListener('loaded', function (e) {
+        // Offset child element of object3D, to rotate around end point
+        // IMPORTANT: It may change that A-Frame puts objects into a group
+        newSegment.object3D.children[0].translateX(-self.data.segmentLength/2);
+        newSegment.object3D.quaternion.copy(currentQuaternion);
+        newSegment.object3D.position.copy(currentPosition);
+      });
       
-      newSegment.object3D.quaternion.copy(currentQuaternion);
-      newSegment.object3D.position.copy(currentPosition);
-      newSegment.setAttribute('geometry', 'skipCache', true);
-      newSegment.setAttribute('geometry', 'buffer', false);
-      newSegment.setAttribute('geometry', 'mergeTo', '#' + self.mixinIDForSymbol.get(symbol) + '-group');
+      this.segmentGroups.get(symbol).appendChild(newSegment);
 
-      // newSegment.addEventListener('geometry-merged', function (e) {
-      //   console.log('merged.');
+      
+      // IDEA: Keep this here if we decide to use aframes mergeTo feature:
       //
-      //});
-    });
-
-    this.sceneEl.appendChild(newSegment);
+      // newSegment.setAttribute('geometry', 'buffer',  'false');
+      // newSegment.setAttribute('geometry', 'skipCache',  'true');
+      // newSegment.setAttribute('geometry', 'mergeTo',  self.mixinIDForSymbol.get(symbol) + '-group');
+      //  skipCache: true; mergeTo: #' + self.mixinIDForSymbol.get(symbol) + '-group');
+    } else {
+      // console.log(this.segmentObjects3D.get(symbol));
+      let newSegmentObject = this.segmentObjects3D.get(symbol).clone();
+      // newSegmentObject.translateX(-self.data.segmentLength/2);
+      newSegmentObject.quaternion.copy(currentQuaternion);
+      newSegmentObject.position.copy(currentPosition);
+      // newSegmentObject.matrixAutoUpdate = false;
+      newSegmentObject.updateMatrix();
+      this.segmentGroups.get(symbol).getObject3D('mesh').geometry.merge(newSegmentObject.geometry, newSegmentObject.matrix);
+    }
     
-    
-    
-    // TODO: if mergeGeometries === false, this.modelGroups.get('symbol').push(newSegment)
-    
-    // this.modelGroups.get(symbol).geometry.merge(newSegment.geometry, newSegment.matrix);
-    
-    // ALTERNATIVE MAYBE?: but use new merge api.
-    // and define #id of the fullModel to merge into.
-    // this.modelGroups.geometry.merge(newSegment.geometry, newSegment.matrix);
-    
-    this.currentSegment.translateX(-(this.data.segmentLength));
+    this.transformationSegment.translateX(-(this.data.segmentLength));
   },
   
   updateTurtleGraphics: function() {
-		console.log('updateTurtleGraphics');
 
 		colorIndex = 0; // Reset color index
 		angle = this.data.angle;
@@ -283,57 +309,49 @@ AFRAME.registerComponent('lsystem', {
 		// }
 		// this.geometry.colorsNeedUpdate = true;
 
-    // TODO: Make currentSegment only an empty shell Object3D, fill with
-    // Geometry only when pushing a new segment, then deciding by smybol (F, L, whatever)
-    // Bzw. on pushSegment create new THREE.Mesh( chosengeometry ), _copy_ the matrix
-    // from currentSegment into it, then merge geometry into according fullModel (eg. branches, leaves) to apply individual materials.
-    this.currentSegment = new THREE.Object3D();
-
-		// this.currentSegment.matrixAutoUpdate = false;
-    let material = new THREE.MeshLambertMaterial({
-      shading: THREE.SmoothShading,
-      vertexColors: THREE.FaceColors
-    });
-
-
-		// this.fullModel = new THREE.Mesh(new THREE.Geometry(), material);
-    // this.el.setObject3D('mesh', this.fullModel);
-		
 		this.LSystem.final();
-    // TODO: then add all fullModels (branches, leaves) into object3d
-    //
-    // for (let fullModel of fullModels) {
-    //   this.el.object3D.add(fullModel);
-    // }
+
 	},
   
   
   onWorkerUpdate: function(e) {
+    console.log('update from worker', e);
 		// Received updated Axiom from worker (which applied productions)
 		this.LSystem.setAxiom(e.data.result);
 		this.updateTurtleGraphics();
+    console.log('updated turtle graphics');
 	},
 
   /**
    * Called when a component is removed (e.g., via removeAttribute).
    * Generally undoes all modifications to the entity.
    */
-  remove: function () { },
+  remove: function () {
+    console.log('\nREMOVE\n');
+    
+  },
 
   /**
    * Called on each scene tick.
    */
-  // tick: function (t) { },
+   tick: function (t) {
+    //  console.log(this.parentEl === undefined);
+    //  console.log('\nTICK\n', t);
+   },
 
   /**
    * Called when entity pauses.
    * Use to stop or remove any dynamic or background behavior such as events.
    */
-  pause: function () { },
+  pause: function () {
+    console.log('\nPAUSE\n');
+  },
 
   /**
    * Called when entity resumes.
    * Use to continue or add any dynamic or background behavior such as events.
    */
-  play: function () { },
+  play: function () {
+    console.log('\nPLAY\n');
+  },
 });

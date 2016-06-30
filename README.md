@@ -33,7 +33,7 @@ Install and use by directly including the [browser files](dist):
 
 <body>
   <a-scene>
-    <a-entity lsystem="axiom: F+F; productions: F->F-F++F"></a-entity>
+    <a-entity lsystem="axiom: F+F; productions: F:F-F++F"></a-entity>
   </a-scene>
 </body>
 ```

@@ -1,3 +1,6 @@
+## Under Work
+Not ready yet, ETA mid-July! :)
+
 ## aframe-example-component
 
 A L-System component for [A-Frame](https://aframe.io).

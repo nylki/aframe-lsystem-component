@@ -48,10 +48,11 @@ AFRAME.registerComponent('lsystem', {
     
     angle: {
       type: 'number',
-      default: 45.0
+      default: 90.0
     },
     
     /* For fixed segment length */
+    // FIXME: Should be configurable per symbol
     segmentLength: {
       type: 'number',
       default: 1.125
@@ -66,7 +67,7 @@ AFRAME.registerComponent('lsystem', {
     
     mergeGeometries: {
       type: 'boolean',
-      default: false
+      default: true
     },
     
     functionsInProductions: {

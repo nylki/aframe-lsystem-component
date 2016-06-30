@@ -1,9 +1,10 @@
 ## Under Work
 Not ready yet, ETA mid-July! :)
 
-## aframe-example-component
+## aframe-lsystem-component
 
-A L-System component for [A-Frame](https://aframe.io).
+A L-System component for [A-Frame](https://aframe.io) which use the L-System library [lindenmayer](https://github.com/nylki/lindenmayer) in the background.
+
 
 ### Properties
 

@@ -1,21 +1,26 @@
 <html>
   <head>
     <title>A-Frame Example Component - Basic</title>
-    <script src="../aframe-v0.2.0.min.js"></script>
+    <script src="../aframe.js"></script>
     <script src="../aframe-lsystem-component.js"></script>
   </head>
   <body>
     <a-scene>
       <a-assets>
-
+        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #00ff00; metalness:0.2"></a-mixin>
+        <a-mixin id="aa" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #00ff00; metalness:0.2"></a-mixin>
+        <a-mixin id="bb" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #ff0000; metalness:0.2"></a-mixin>
+        <a-mixin id="cc" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #0000ff; metalness:0.2"></a-mixin>
       </a-assets>
       
       <a-entity ></a-entity>
       
-      <!-- <a-entity geometry="primitive: box" collada-model="url(model.dae)" material="color: #C03546"></a-entity> -->
-      <a-entity lsystem="axiom: X; productions: X=>F-[[X]+X]+F[+FX]-X F=>FF; baseObjects: F=>line P=>leaf; angle: 22.5; iterations: 5" geometry="primitive: box" material="color: green" position="0 1 3" rotation="0 90 -90"></a-entity>
+      <!-- <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; mergeGeometries:true; angle: 90.0; iterations: 1; segmentLength: 1.0" position="0 2 0" rotation="0 45 0"></a-entity> -->
       
-      <a-entity geometry="primitive: box" position="0 0 0" material="color: blue"> </a-entity>
+      <a-entity lsystem="axiom: G; productions: G:FG+HFF; segmentMixins: F:line G:bb H:cc; mergeGeometries:true; angle: 90.0; iterations: 3; segmentLength: 1.0" position="0 2 0" rotation="0 45 0"></a-entity>
+
+      
+      <!-- <a-entity geometry="primitive: box" position="0 0 0" material="color: blue"> </a-entity> -->
       
       <!-- <a-entity geometry="primitive: box" position="2 0 0" material="color: yellow"></a-entity> -->
 </a-scene>

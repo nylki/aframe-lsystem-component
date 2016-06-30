@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <title>A-Frame L-System Component - Hilbert Curve</title>
+    <script src="../aframe.js"></script>
+    <script src="../aframe-lsystem-component.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #7ca1c6; metalness:0.2"></a-mixin>
+      </a-assets>
+      
+      <a-entity ></a-entity>
+      
+      <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; mergeGeometries:true; angle: 90.0; iterations: 1; segmentLength: 1.0" position="0 2 0" rotation="0 45 0"></a-entity>
+      
+</a-scene>
+</body>
+</html>

@@ -4,7 +4,6 @@ if (typeof AFRAME === 'undefined') {
 
 var LSystem;
 
-
 // As we use webpack for compiling the source, it's used to bundle the
 // web worker into a blob via: https://github.com/webpack/worker-loader
 // Which works without additional changes, besides using `require` inside
@@ -85,6 +84,12 @@ AFRAME.registerComponent('lsystem', {
     }
     
     this.sceneEl = document.querySelector('a-scene');
+    
+    // Map for remembering the elements holding differnt segment types
+    this.segmentElGroups = new Map();
+    
+    var self = this;
+    
     this.xPosRotation = new THREE.Quaternion();
     this.xNegRotation = new THREE.Quaternion();
     this.yPosRotation = new THREE.Quaternion();
@@ -102,16 +107,16 @@ AFRAME.registerComponent('lsystem', {
     this.zPosRotation = new THREE.Quaternion();
     this.zNegRotation = new THREE.Quaternion();
     this.yReverseRotation = new THREE.Quaternion();
-    this.colors = [0x8c651b, 0x7d9322, 0x3d9322];
-    this.colorIndex = 0;
-    
-    
-    var self = this;
     
     this.LSystem = new LSystem({
-      axiom: 'FF+F',
-      productions: {'F': 'FF'},
+      axiom: 'F',
+      productions: {'F': 'F'},
       finals: {
+        /* As a default F is already defined as final, new ones get added automatically
+          by parsing the segment mixins. If no segment mixin for any symbol is defined
+          it wont get a final function and therefore not render.
+         */
+        'F': () => {self.pushSegment.bind(self, segmentMixin[0])()},
 				'+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
 				'-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
 				'&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
@@ -160,6 +165,13 @@ AFRAME.registerComponent('lsystem', {
     let self = this;
     
     this.el.removeObject3D('mesh');
+    
+    if(this.segmentElGroups !== undefined) {
+      for (let segmentElGroup of this.segmentElGroups.values()) {
+        segmentElGroup.removeObject3D('mesh');
+        }
+    }
+
 
     // The main segment used for saving transformations (rotation, translation, scale(?))
     this.transformationSegment = new THREE.Object3D();
@@ -171,9 +183,6 @@ AFRAME.registerComponent('lsystem', {
     // (parsed further below from element attributes)
     this.mixinIDForSymbol = new Map();
     
-    // Map for remembering the elements holding differnt segment types
-    this.segmentElGroups = new Map();
-    
     // Map for buffering geometries for use in pushSegments()
     // when merging geometries ourselves and not by appending a `mixin` attributes,
     // as done with `mergeGeometry = false`.
@@ -183,55 +192,52 @@ AFRAME.registerComponent('lsystem', {
     
     let loadingPromises = [];
     
-    while (this.el.firstChild) {
-        this.el.removeChild(this.el.firstChild);
-    }
     
     // Collect mixin info
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
-
-      for (let segmentMixin_ of this.data.segmentMixins) {
-        // create a copy of current iterated pair for asyncy stuff to work.
-        let segmentMixin = segmentMixin_.slice();
+      for (let [symbol, mixinID] of this.data.segmentMixins) {
         
-        this.mixinIDForSymbol.set(segmentMixin[0], segmentMixin[1]);
+        this.mixinIDForSymbol.set(symbol, mixinID);
         let segmentElGroup = document.createElement('a-entity');
         
         // Set final functions for each symbol that has a mixin defined
-        this.LSystem.setFinal(segmentMixin[0], () => {self.pushSegment.bind(self, segmentMixin[0])()});
-        console.log(this.LSystem.finals);
+        this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
 
 
         loadingPromises.push(new Promise((resolve, reject) => {
           if(this.data.mergeGeometries === true) {
             // TODO: Put it all under this.mergeData
             segmentElGroup.setAttribute('geometry', 'buffer:false;');
-            segmentElGroup.setAttribute('mixin', segmentMixin[1]);
+            segmentElGroup.setAttribute('mixin', mixinID);
+            
             segmentElGroup.addEventListener('loaded', function (e) {
-              
               let segmentObject = segmentElGroup.getObject3D('mesh').clone();
               // Offset geometry by half segmentLength to get the rotation point right.
               segmentObject.geometry.translate(-self.data.segmentLength/2, 0, 0);
-              self.segmentObjects3D.set(segmentMixin[0], segmentObject);
-              self.segmentElGroups.set(segmentMixin[0], segmentElGroup);
+              
+              self.segmentObjects3D.set(symbol, segmentObject);
+              self.segmentElGroups.set(symbol, segmentElGroup);
               let mergeGroup = new THREE.Mesh(new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone());
-              console.log(self.segmentMergeGroups);
-              console.log('settting now a key: ', segmentMixin[0]);
-              self.segmentMergeGroups.set(segmentMixin[0], mergeGroup);
-              console.log(self.segmentMergeGroups);
+              self.segmentMergeGroups.set(symbol, mergeGroup);
               
               resolve();
             });
           } else {
             resolve();
           }
+            
+          segmentElGroup.setAttribute('id', mixinID + '-group');
+
+          if(self.segmentElGroups.has(symbol)) {
+            let previousElGroup = self.segmentElGroups.get(symbol);
+            self.segmentElGroups.delete(symbol);
+            this.el.removeChild(previousElGroup);
+          }
           
-          segmentElGroup.setAttribute('id', segmentMixin[1] + '-group');
           this.el.appendChild(segmentElGroup);
-          this.segmentElGroups.set(segmentMixin[0], segmentElGroup);
+          this.segmentElGroups.set(symbol, segmentElGroup);
           
         }));
-
       }
     }
     
@@ -245,7 +251,6 @@ AFRAME.registerComponent('lsystem', {
     // After all groups have been created, post to the worker.
     
     Promise.all(loadingPromises).then(() => {
-      console.log('all groups loaded.');
       if(Date.now() - this.worker.startTime > 1000 ) {
         // if we got user input, but worker is running for over a second
         // terminate old worker and start new one.
@@ -282,15 +287,7 @@ AFRAME.registerComponent('lsystem', {
       
       this.segmentElGroups.get(symbol).appendChild(newSegment);
 
-      
-      // IDEA: Keep this here if we decide to use aframes mergeTo feature:
-      //
-      // newSegment.setAttribute('geometry', 'buffer',  'false');
-      // newSegment.setAttribute('geometry', 'skipCache',  'true');
-      // newSegment.setAttribute('geometry', 'mergeTo',  self.mixinIDForSymbol.get(symbol) + '-group');
-      //  skipCache: true; mergeTo: #' + self.mixinIDForSymbol.get(symbol) + '-group');
     } else {
-      // console.log(this.segmentObjects3D.get(symbol));
       let segmentObject = this.segmentObjects3D.get(symbol);
       let newSegmentObject = segmentObject.clone(true);
       
@@ -328,8 +325,7 @@ AFRAME.registerComponent('lsystem', {
 		// 	face.color.setHex(this.colors[colorIndex]);
 		// }
 		// this.geometry.colorsNeedUpdate = true;
-    console.log(this.segmentMergeGroups);
-    console.log(this.segmentElGroups);
+
 		this.LSystem.final();
     // finally set the merged meshes to be visible.
     if(this.data.mergeGeometries === true) {
@@ -344,11 +340,9 @@ AFRAME.registerComponent('lsystem', {
   
   
   onWorkerUpdate: function(e) {
-    console.log('update from worker', e);
 		// Received updated Axiom from worker (which applied productions)
 		this.LSystem.setAxiom(e.data.result);
 		this.updateTurtleGraphics();
-    console.log('updated turtle graphics');
 	},
 
   /**
@@ -356,7 +350,6 @@ AFRAME.registerComponent('lsystem', {
    * Generally undoes all modifications to the entity.
    */
   remove: function () {
-    console.log('\nREMOVE\n');
     
   },
 
@@ -373,7 +366,6 @@ AFRAME.registerComponent('lsystem', {
    * Use to stop or remove any dynamic or background behavior such as events.
    */
   pause: function () {
-    console.log('\nPAUSE\n');
   },
 
   /**
@@ -381,6 +373,5 @@ AFRAME.registerComponent('lsystem', {
    * Use to continue or add any dynamic or background behavior such as events.
    */
   play: function () {
-    console.log('\nPLAY\n');
   },
 });

@@ -97,11 +97,8 @@ AFRAME.registerComponent('lsystem', {
     }
     
     this.sceneEl = document.querySelector('a-scene');
-    this._id = Math.floor(Math.random() * 1000);
-
     
     let self = this;
-    this.bla = true;
     
     this.initWorker();
     

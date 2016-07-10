@@ -143,28 +143,6 @@
 	    }
 	    
 	    this.sceneEl = document.querySelector('a-scene');
-	    this._id = Math.floor(Math.random() * 1000);
-
-	    
-	    let self = this;
-	    this.bla = true;
-
-	    
-	    
-	    
-	    
-	  },
-
-	  /**
-	   * Called when component is attached and when component data changes.
-	   * Generally modifies the entity based on the data.
-	   */
-	  update: function (oldData) {
-	    // var diffData = diff(data, oldData || {});
-	    // console.log(diffData);
-	    
-	    // TODO: Check if only angle changed or axiom or productions
-	    //
 	    
 	    let self = this;
 	    
@@ -197,27 +175,46 @@
 	          it wont get a final function and therefore not render.
 	         */
 	        'F': () => {self.pushSegment.bind(self, 'F')()},
-					'+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
-					'-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
-					'&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
-					'^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
-					'\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-					'<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-					'/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
-					'>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
-					'|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
-					'!': () => {
-					//	self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
-						self.colorIndex++;
-					},
-					'\'': () => {
-						//self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
-						self.colorIndex = Math.max(0, self.colorIndex - 1);
-					},
-					'[': () => { self.stack.push(self.transformationSegment.clone()) },
-					']': () => { self.transformationSegment = self.stack.pop() }
-				}
+	        '+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
+	        '-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+	        '&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
+	        '^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
+	        '\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+	        '<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+	        '/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+	        '>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+	        '|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
+	        '!': () => {
+	        //	self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
+	          self.colorIndex++;
+	        },
+	        '\'': () => {
+	          //self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
+	          self.colorIndex = Math.max(0, self.colorIndex - 1);
+	        },
+	        '[': () => { self.stack.push(self.transformationSegment.clone()) },
+	        ']': () => { self.transformationSegment = self.stack.pop() }
+	      }
 	    });
+
+	    
+	    
+	    
+	    
+	  },
+
+	  /**
+	   * Called when component is attached and when component data changes.
+	   * Generally modifies the entity based on the data.
+	   */
+	  update: function (oldData) {
+	    // var diffData = diff(data, oldData || {});
+	    // console.log(diffData);
+	    
+	    // TODO: Check if only angle changed or axiom or productions
+	    //
+	    
+	    let self = this;
 	    
 	    this.el.removeObject3D('mesh');
 	    
@@ -231,7 +228,6 @@
 	    // Map for remembering the elements holding differnt segment types
 	    this.segmentElementGroupsMap = new Map();
 
-	  
 
 	    // The main segment used for saving transformations (rotation, translation, scale(?))
 	    this.transformationSegment = new THREE.Object3D();

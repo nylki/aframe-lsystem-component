@@ -1,11 +1,10 @@
 // Require instead of importScripts because we use webpack
 // with worker-loader for compiling source: https://github.com/webpack/worker-loader
-var LSystem = require('lindenmayer');
-var lsystem = new LSystem({});
-var timeout = {};
+let LSystem = require('lindenmayer');
+let lsystem = new LSystem({});
+let timeout = {};
 
 onmessage = function(e) {
-  
   // wait a few ms to start thread, to be able to cancel old tasks
   clearTimeout(timeout);
   timeout = setTimeout(function() {

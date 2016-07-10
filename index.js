@@ -31,12 +31,25 @@ AFRAME.registerComponent('lsystem', {
       }
     },
     
+    // A: [blue line, red line, yellow line] B: red line
+    
     segmentMixins: {
       type: 'string',
       parse: function (value) {
-        return value.split(' ').map(function (splitValue) {
-          return splitValue.split(':');
-        })
+        
+        let fromIndex = 0;
+        let currentIndex = value.indexOf(':', fromIndex);
+        let mixinsForSymbol = new Map();
+        while(currentIndex !== -1) {
+        	fromIndex = currentIndex+1;
+        	let newCurrentIndex = value.indexOf(':', fromIndex);
+        	let symbol = value.slice(currentIndex-1, currentIndex);
+        	let mixinlist = value.slice(currentIndex+1, newCurrentIndex === -1 ? value.length : newCurrentIndex-1).replace(/[\[\]]/g, '').split(',');
+
+        	mixinsForSymbol.set(symbol, mixinlist)
+        	currentIndex = newCurrentIndex;
+        }
+        return mixinsForSymbol;
       }
     },
     
@@ -84,11 +97,13 @@ AFRAME.registerComponent('lsystem', {
     }
     
     this.sceneEl = document.querySelector('a-scene');
+    this._id = Math.floor(Math.random() * 1000);
+
     
-    // Map for remembering the elements holding differnt segment types
-    this.segmentElGroups = new Map();
+    let self = this;
+    this.bla = true;
     
-    var self = this;
+    this.initWorker();
     
     this.xPosRotation = new THREE.Quaternion();
     this.xNegRotation = new THREE.Quaternion();
@@ -116,38 +131,32 @@ AFRAME.registerComponent('lsystem', {
           by parsing the segment mixins. If no segment mixin for any symbol is defined
           it wont get a final function and therefore not render.
          */
-        'F': () => {self.pushSegment.bind(self, segmentMixin[0])()},
-				'+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
-				'-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
-				'&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
-				'^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
-				'\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-				'<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-				'/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
-				'>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
-				'|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
-				'!': () => {
-					self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
-					colorIndex = Math.min(colors.length - 1, colorIndex + 1);
-					for (let face of self.transformationSegment.geometry.faces) {
-						face.color.setHex(colors[colorIndex]);
-					}
-					self.transformationSegment.geometry.colorsNeedUpdate = true;
-				},
-				'\'': () => {
-					self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
-					colorIndex = Math.max(0, colorIndex - 1);
-					for (let face of self.transformationSegment.geometry.faces) {
-						face.color.setHex(colors[colorIndex]);
-					}
-					self.transformationSegment.geometry.colorsNeedUpdate = true;
-				},
-				'[': () => { self.stack.push(self.transformationSegment.clone()) },
-				']': () => { self.transformationSegment = self.stack.pop() }
-			}
+        'F': () => {self.pushSegment.bind(self, 'F')()},
+        '+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
+        '-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+        '&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
+        '^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
+        '\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+        '<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
+        '/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+        '>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+        '|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
+        '!': () => {
+        //	self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
+          self.colorIndex++;
+        },
+        '\'': () => {
+          //self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
+          self.colorIndex = Math.max(0, self.colorIndex - 1);
+        },
+        '[': () => { self.stack.push(self.transformationSegment.clone()) },
+        ']': () => { self.transformationSegment = self.stack.pop() }
+      }
     });
+
     
-    this.initWorker();
+    
+    
     
   },
 
@@ -166,11 +175,15 @@ AFRAME.registerComponent('lsystem', {
     
     this.el.removeObject3D('mesh');
     
-    if(this.segmentElGroups !== undefined) {
-      for (let segmentElGroup of this.segmentElGroups.values()) {
+    if(this.segmentElementGroupsMap !== undefined) {
+      for (let segmentElGroup of this.segmentElementGroupsMap.values()) {
         segmentElGroup.removeObject3D('mesh');
         }
     }
+    this.el.innerHTML = '';
+    
+    // Map for remembering the elements holding differnt segment types
+    this.segmentElementGroupsMap = new Map();
 
 
     // The main segment used for saving transformations (rotation, translation, scale(?))
@@ -179,78 +192,105 @@ AFRAME.registerComponent('lsystem', {
     // We push copies of this.transformationSegment on branch symbols inside this array.
     this.stack = [];
     
-    // Map for remembering which mixin belongs to which symbol
-    // (parsed further below from element attributes)
-    this.mixinIDForSymbol = new Map();
+    this.mixinMap = new Map();
+    // Construct a map with keys = `symbol + colorIndex` from data.segmentMixins
+    for (let [symbol, mixinList] of this.data.segmentMixins) {
+      for (let i = 0; i < mixinList.length; i++) {
+        this.mixinMap.set(symbol + i, mixinList[i]);
+      }
+    }
     
     // Map for buffering geometries for use in pushSegments()
     // when merging geometries ourselves and not by appending a `mixin` attributes,
     // as done with `mergeGeometry = false`.
-    this.segmentObjects3D = new Map();
+    this.segmentObjects3DMap = new Map();
     
-    this.segmentMergeGroups = new Map();
+    this.mergeGroups = new Map();
     
     let loadingPromises = [];
     
     
     // Collect mixin info
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
-      for (let [symbol, mixinID] of this.data.segmentMixins) {
-        
-        this.mixinIDForSymbol.set(symbol, mixinID);
-        let segmentElGroup = document.createElement('a-entity');
+      
+      // Go through every symbols segmentMixins as defined by user
+      for (let [symbol, mixinList] of this.data.segmentMixins) {
         
         // Set final functions for each symbol that has a mixin defined
         this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
+        
+        // And iterate the MixinList to buffer the segments.
+        for (let i = 0; i < mixinList.length; i++) {
+          
+          let mixinColorIndex = i;
+          let mixin = mixinList[mixinColorIndex];
+          
+          loadingPromises.push(new Promise((resolve, reject) => {
+            // Save mixinColorIndex for async promise below.
 
+            let segmentElGroup = document.createElement('a-entity');
+            segmentElGroup.setAttribute('id', mixin + '-group-' + mixinColorIndex + Math.floor(Math.random() * 10000));
 
-        loadingPromises.push(new Promise((resolve, reject) => {
-          if(this.data.mergeGeometries === true) {
-            // TODO: Put it all under this.mergeData
-            segmentElGroup.setAttribute('geometry', 'buffer:false;');
-            segmentElGroup.setAttribute('mixin', mixinID);
-            
-            segmentElGroup.addEventListener('loaded', function (e) {
-              let segmentObject = segmentElGroup.getObject3D('mesh').clone();
-              // Offset geometry by half segmentLength to get the rotation point right.
-              segmentObject.geometry.translate(-self.data.segmentLength/2, 0, 0);
-              
-              self.segmentObjects3D.set(symbol, segmentObject);
-              self.segmentElGroups.set(symbol, segmentElGroup);
-              let mergeGroup = new THREE.Mesh(new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone());
-              self.segmentMergeGroups.set(symbol, mergeGroup);
-              
+            if(this.data.mergeGeometries === true) {
+              // TODO: Put it all under this.mergeData
+              segmentElGroup.setAttribute('geometry', 'buffer', false);
+              segmentElGroup.setAttribute('mixin', mixin);
+              segmentElGroup.addEventListener('loaded', function (e) {
+                
+                let segmentObject = segmentElGroup.getObject3D('mesh').clone();
+                
+                // Make sure the geometry is actually unique
+                // AFrame sets the same geometry for multiple entities. As we modify
+                // the geometry per entity we need to have unique geometry instances.
+                segmentObject.geometry.dispose();
+                segmentObject.geometry = (segmentObject.geometry.clone());
+                
+                // Offset geometry by half segmentLength to get the rotation point right.
+                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( -self.data.segmentLength/2, 0, 0 ) );
+                
+                
+                let mergeGroup = new THREE.Mesh(
+                  new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone()
+                );
+                
+                self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
+                self.segmentElementGroupsMap.set(symbol + mixinColorIndex, segmentElGroup);
+                self.mergeGroups.set(symbol + mixinColorIndex, mergeGroup);
+
+                resolve();
+              });
+            } else {
               resolve();
-            });
-          } else {
-            resolve();
-          }
+            }
             
-          segmentElGroup.setAttribute('id', mixinID + '-group');
-
-          if(self.segmentElGroups.has(symbol)) {
-            let previousElGroup = self.segmentElGroups.get(symbol);
-            self.segmentElGroups.delete(symbol);
-            this.el.removeChild(previousElGroup);
-          }
-          
-          this.el.appendChild(segmentElGroup);
-          this.segmentElGroups.set(symbol, segmentElGroup);
-          
-        }));
+            
+            
+            if(this.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
+              let previousElGroup = this.segmentElementGroupsMap.get(symbol + mixinColorIndex);
+              this.segmentElementGroupsMap.delete(symbol + mixinColorIndex);
+              this.el.removeChild(previousElGroup);
+            }
+            
+            this.el.appendChild(segmentElGroup);
+            
+            
+          }));
+        }
       }
     }
     
-    var params = {
-      axiom: 		this.data.axiom,
-      productions: this.data.productions,
-      iterations: this.data.iterations
-    }
+
 
     // post params to worker
     // After all groups have been created, post to the worker.
-    
     Promise.all(loadingPromises).then(() => {
+      
+      let params = {
+        axiom: 		this.data.axiom,
+        productions: this.data.productions,
+        iterations: this.data.iterations
+      }
+      
       if(Date.now() - this.worker.startTime > 1000 ) {
         // if we got user input, but worker is running for over a second
         // terminate old worker and start new one.
@@ -274,9 +314,14 @@ AFRAME.registerComponent('lsystem', {
     let currentQuaternion = self.transformationSegment.quaternion.clone();
     let currentPosition = self.transformationSegment.position.clone();
     
+    // Cap colorIndex to maximum mixins defined for the symbol.
+    let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length-1);
+
+    
     if(this.data.mergeGeometries === false) {
       let newSegment = document.createElement('a-entity');
-      newSegment.setAttribute('mixin', this.mixinIDForSymbol.get(symbol));
+      newSegment.setAttribute('mixin', this.mixinMap.get(symbol + cappedColorIndex));
+      
       newSegment.addEventListener('loaded', function (e) {
         // Offset child element of object3D, to rotate around end point
         // IMPORTANT: It may change that A-Frame puts objects into a group
@@ -285,17 +330,16 @@ AFRAME.registerComponent('lsystem', {
         newSegment.object3D.position.copy(currentPosition);
       });
       
-      this.segmentElGroups.get(symbol).appendChild(newSegment);
+      this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 
     } else {
-      let segmentObject = this.segmentObjects3D.get(symbol);
-      let newSegmentObject = segmentObject.clone(true);
-      
-      newSegmentObject.quaternion.copy(currentQuaternion);
-      newSegmentObject.position.copy(currentPosition);
-      newSegmentObject.matrixAutoUpdate = false;
-      newSegmentObject.updateMatrix();
-      this.segmentMergeGroups.get(symbol).geometry.merge(newSegmentObject.geometry, newSegmentObject.matrix);
+      let segmentObject3D = this.segmentObjects3DMap.get(symbol + cappedColorIndex);
+      let newSegmentObject3D = segmentObject3D.clone();
+      newSegmentObject3D.quaternion.copy(currentQuaternion);
+      newSegmentObject3D.position.copy(currentPosition);
+      newSegmentObject3D.matrixAutoUpdate = false;
+      newSegmentObject3D.updateMatrix();
+      this.mergeGroups.get(symbol + cappedColorIndex).geometry.merge(newSegmentObject3D.geometry, newSegmentObject3D.matrix);
     }
     
     this.transformationSegment.translateX(-(this.data.segmentLength));
@@ -303,10 +347,12 @@ AFRAME.registerComponent('lsystem', {
   
   updateTurtleGraphics: function() {
 
-		colorIndex = 0; // Reset color index
-		angle = this.data.angle;
+		this.colorIndex = 0;
     this.lineWidth = 0.0005;
     this.lineLength = 0.125;
+    
+    let angle = this.data.angle;
+    
 		// Set quaternions based on angle slider
 		this.xPosRotation.setFromAxisAngle( this.X, (Math.PI / 180) * angle );
 		this.xNegRotation.setFromAxisAngle( this.X, (Math.PI / 180) * -angle );
@@ -329,9 +375,17 @@ AFRAME.registerComponent('lsystem', {
 		this.LSystem.final();
     // finally set the merged meshes to be visible.
     if(this.data.mergeGeometries === true) {
-      for (let elGroup of this.segmentElGroups) {
-        elGroup[1].setObject3D('mesh', this.segmentMergeGroups.get(elGroup[0]));
-        elGroup[1].setAttribute('mixin', this.mixinIDForSymbol.get(elGroup[0]));
+      for (let tuple of this.segmentElementGroupsMap) {
+        let [symbolWithColorIndex, elGroup] = tuple;
+
+        let mergeGroup = this.mergeGroups.get(symbolWithColorIndex);
+        // Remove unused element groups inside our element
+        if(mergeGroup.geometry.vertices.length === 0) {
+          this.el.removeChild(elGroup);
+        } else {
+          elGroup.setObject3D('mesh', this.mergeGroups.get(symbolWithColorIndex));
+          elGroup.setAttribute('mixin', this.mixinMap.get(symbolWithColorIndex));
+        }
       }
     }
 

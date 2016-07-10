@@ -1,5 +1,7 @@
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>A-Frame L-System Component - Hilbert Curve</title>
     <script src="../aframe.js"></script>
     <script src="../aframe-lsystem-component.js"></script>
@@ -8,11 +10,25 @@
     <a-scene>
       
       <a-assets>
-        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1.0; depth: 0.2;" material="color: #7ca1c6; metalness:0.2"></a-mixin>
+        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1; depth: 0.2;" material="metalness:0.2"></a-mixin>
+
+        <a-mixin id="yellow" material="color: yellow;"></a-mixin>
+        <a-mixin id="green" material="color: #528e1e;"></a-mixin>
+        <a-mixin id="red" material="color: #8e311e;"></a-mixin>
+        
       </a-assets>
       
-      <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; mergeGeometries:true; angle: 90.0; iterations: 3; segmentLength: 1.0" position="0 0 -10" rotation="0 45 0">
+      <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:line; mergeGeometries:true; angle: 90.0; iterations: 3; segmentLength: 1" position="0 0 -10" rotation="0 45 0">
       </a-entity>
+      
+      
+      <a-entity lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:green line; mergeGeometries:true; angle: 90.0; iterations: 3; segmentLength: 1" position="-10 0 -15" rotation="0 45 0">
+      </a-entity>
+      
+      <a-entity position="0 -8 -12" rotation="0 45 -90" lsystem="axiom: X; productions: X:FFX[+XF][--F!X'][&FXFX]![^FX]'; segmentMixins: F:yellow line,green line,red line; angle: 22.5; iterations: 5; segmentLength: 1">
+
+      
+      
       
 </a-scene>
 </body>

@@ -63,16 +63,6 @@ AFRAME.registerComponent('lsystem', {
       default: 90.0
     },
     
-    /* For fixed segment length */
-    // FIXME: Should be configurable per symbol
-    segmentLength: {
-      type: 'number',
-      default: 1.125
-    },
-    
-    /* Translate a segment, based on it's bonding box, may not be optimal!
-      TODO: implementation!
-     */
     dynamicSegmentLength: {
       default: true
     },
@@ -185,6 +175,7 @@ AFRAME.registerComponent('lsystem', {
 
     // The main segment used for saving transformations (rotation, translation, scale(?))
     this.transformationSegment = new THREE.Object3D();
+
     
     // We push copies of this.transformationSegment on branch symbols inside this array.
     this.stack = [];
@@ -202,12 +193,14 @@ AFRAME.registerComponent('lsystem', {
     // as done with `mergeGeometry = false`.
     this.segmentObjects3DMap = new Map();
     
+    this.segmentLengthMap = new Map();
     this.mergeGroups = new Map();
     
     let loadingPromises = [];
     
     
-    // Collect mixin info
+    // Collect mixin info by pre-appending segment elements with their mixin
+    // Then ise the generated geometry etc.
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
       
       // Go through every symbols segmentMixins as defined by user
@@ -216,7 +209,7 @@ AFRAME.registerComponent('lsystem', {
         // Set final functions for each symbol that has a mixin defined
         this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
         
-        // And iterate the MixinList to buffer the segments.
+        // And iterate the MixinList to buffer the segments or calculate segment lengths…
         for (let i = 0; i < mixinList.length; i++) {
           
           let mixinColorIndex = i;
@@ -227,39 +220,41 @@ AFRAME.registerComponent('lsystem', {
 
             let segmentElGroup = document.createElement('a-entity');
             segmentElGroup.setAttribute('id', mixin + '-group-' + mixinColorIndex + Math.floor(Math.random() * 10000));
-
-            if(this.data.mergeGeometries === true) {
-              // TODO: Put it all under this.mergeData
-              segmentElGroup.setAttribute('geometry', 'buffer', false);
-              segmentElGroup.setAttribute('mixin', mixin);
-              segmentElGroup.addEventListener('loaded', function (e) {
-                
-                let segmentObject = segmentElGroup.getObject3D('mesh').clone();
-                
-                // Make sure the geometry is actually unique
-                // AFrame sets the same geometry for multiple entities. As we modify
-                // the geometry per entity we need to have unique geometry instances.
-                segmentObject.geometry.dispose();
-                segmentObject.geometry = (segmentObject.geometry.clone());
+            
+            
+            // TODO: Put it all under this.mergeData
+            segmentElGroup.setAttribute('geometry', 'buffer', false);
+            segmentElGroup.setAttribute('mixin', mixin);
+            segmentElGroup.addEventListener('loaded', function (e) {
+              
+              let segmentObject = segmentElGroup.getObject3D('mesh').clone();
+              
+              // Make sure the geometry is actually unique
+              // AFrame sets the same geometry for multiple entities. As we modify
+              // the geometry per entity we need to have unique geometry instances.
+              segmentElGroup.getObject3D('mesh').geometry.dispose();
+              segmentObject.geometry = (segmentObject.geometry.clone());
+              
+              segmentLength = self.calculateSegmentLength(mixin, segmentObject.geometry);
+              
+              // Do some additional stuff like buffering 3D objects / geometry
+              // if we want to merge geometries.
+              if(self.data.mergeGeometries === true) {
                 
                 // Offset geometry by half segmentLength to get the rotation point right.
-                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( -self.data.segmentLength/2, 0, 0 ) );
-                
+                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( -segmentLength/2, 0, 0 ) );
                 
                 let mergeGroup = new THREE.Mesh(
                   new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone()
                 );
                 
                 self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
-                self.segmentElementGroupsMap.set(symbol + mixinColorIndex, segmentElGroup);
                 self.mergeGroups.set(symbol + mixinColorIndex, mergeGroup);
-
-                resolve();
-              });
-            } else {
+              }
+              
+              segmentElGroup.removeObject3D('mesh');
               resolve();
-            }
-            
+            });
             
             
             if(this.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
@@ -268,6 +263,7 @@ AFRAME.registerComponent('lsystem', {
               this.el.removeChild(previousElGroup);
             }
             
+            this.segmentElementGroupsMap.set(symbol + mixinColorIndex, segmentElGroup);
             this.el.appendChild(segmentElGroup);
             
             
@@ -301,6 +297,16 @@ AFRAME.registerComponent('lsystem', {
 
   },
   
+  // if this.dynamicSegmentLength===true use this function to set the length
+  // depending on segments geometries bbox
+  calculateSegmentLength: function (mixin, geometry) {
+    if(this.segmentLengthMap.has(mixin)) return this.segmentLengthMap.get(mixin);
+    geometry.computeBoundingBox();
+    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x));
+    return this.segmentLengthMap.get(mixin);
+    
+  },
+  
   initWorker: function() {
     this.worker = new LSystemWorker();
     this.worker.onmessage = this.onWorkerUpdate.bind(this);
@@ -313,16 +319,22 @@ AFRAME.registerComponent('lsystem', {
     
     // Cap colorIndex to maximum mixins defined for the symbol.
     let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length-1);
+    
+    let mixin = this.mixinMap.get(symbol + cappedColorIndex);
+    
 
     
     if(this.data.mergeGeometries === false) {
       let newSegment = document.createElement('a-entity');
-      newSegment.setAttribute('mixin', this.mixinMap.get(symbol + cappedColorIndex));
+      newSegment.setAttribute('mixin', mixin);
       
       newSegment.addEventListener('loaded', function (e) {
         // Offset child element of object3D, to rotate around end point
         // IMPORTANT: It may change that A-Frame puts objects into a group
-        newSegment.object3D.children[0].translateX(-self.data.segmentLength/2);
+
+        let segmentLength = self.segmentLengthMap.get(mixin);
+
+        newSegment.object3D.children[0].translateX(-segmentLength/2);
         newSegment.object3D.quaternion.copy(currentQuaternion);
         newSegment.object3D.position.copy(currentPosition);
       });
@@ -338,8 +350,8 @@ AFRAME.registerComponent('lsystem', {
       newSegmentObject3D.updateMatrix();
       this.mergeGroups.get(symbol + cappedColorIndex).geometry.merge(newSegmentObject3D.geometry, newSegmentObject3D.matrix);
     }
-    
-    this.transformationSegment.translateX(-(this.data.segmentLength));
+    let segmentLength = this.segmentLengthMap.get(mixin);
+    this.transformationSegment.translateX(-segmentLength);
   },
   
   updateTurtleGraphics: function() {

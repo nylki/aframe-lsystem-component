@@ -25,6 +25,3 @@ onmessage = function(e) {
   }, 20);
 
 };
-
-
-console.log('worker initialized');

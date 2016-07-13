@@ -109,6 +109,7 @@ AFRAME.registerComponent('lsystem', {
     this.zPosRotation = new THREE.Quaternion();
     this.zNegRotation = new THREE.Quaternion();
     this.yReverseRotation = new THREE.Quaternion();
+    this.segmentLengthFactor = 1.0;
     
     this.LSystem = new LSystem({
       axiom: 'F',
@@ -119,21 +120,24 @@ AFRAME.registerComponent('lsystem', {
           it wont get a final function and therefore not render.
          */
         'F': () => {self.pushSegment.bind(self, 'F')()},
-        '+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
-        '-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+        '+': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+        '-': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
         '&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
         '^': () => { self.transformationSegment.quaternion.multiply(self.zPosRotation)},
-        '\\': () =>{ self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-        '<': () => { self.transformationSegment.quaternion.multiply(self.xNegRotation)},
-        '/': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
-        '>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
+        '\\': () =>{ self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+        '<': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
+        '/': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
+        '>': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
         '|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
         '!': () => {
-        //	self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y + 0.2, self.transformationSegment.scale.z + 0.2);
+        self.segmentLengthFactor *=(2/3);
+        self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(2/3), self.transformationSegment.scale.y*=(2/3), self.transformationSegment.scale.z*=(2/3));
+        
           self.colorIndex++;
         },
         '\'': () => {
-          //self.transformationSegment.scale.set(self.transformationSegment.scale.x, self.transformationSegment.scale.y - 0.2, self.transformationSegment.scale.z - 0.2);
+          self.segmentLengthFactor *=(3/2);
+          self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(3/2), self.transformationSegment.scale.y*=(3/2), self.transformationSegment.scale.z*=(3/2));
           self.colorIndex = Math.max(0, self.colorIndex - 1);
         },
         '[': () => { self.stack.push(self.transformationSegment.clone()) },
@@ -242,7 +246,7 @@ AFRAME.registerComponent('lsystem', {
               if(self.data.mergeGeometries === true) {
                 
                 // Offset geometry by half segmentLength to get the rotation point right.
-                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( -segmentLength/2, 0, 0 ) );
+                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( 0, (segmentLength * self.segmentLengthFactor)/2, 0 ) );
                 
                 let mergeGroup = new THREE.Mesh(
                   new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone()
@@ -302,7 +306,7 @@ AFRAME.registerComponent('lsystem', {
   calculateSegmentLength: function (mixin, geometry) {
     if(this.segmentLengthMap.has(mixin)) return this.segmentLengthMap.get(mixin);
     geometry.computeBoundingBox();
-    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x));
+    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.y - geometry.boundingBox.max.y));
     return this.segmentLengthMap.get(mixin);
     
   },
@@ -316,6 +320,7 @@ AFRAME.registerComponent('lsystem', {
     let self = this;
     let currentQuaternion = self.transformationSegment.quaternion.clone();
     let currentPosition = self.transformationSegment.position.clone();
+    let currentScale = self.transformationSegment.scale.clone();
     
     // Cap colorIndex to maximum mixins defined for the symbol.
     let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length-1);
@@ -334,9 +339,10 @@ AFRAME.registerComponent('lsystem', {
 
         let segmentLength = self.segmentLengthMap.get(mixin);
 
-        newSegment.object3D.children[0].translateX(-segmentLength/2);
+        newSegment.object3D.children[0].translateY((segmentLength * self.segmentLengthFactor) / 2);
         newSegment.object3D.quaternion.copy(currentQuaternion);
         newSegment.object3D.position.copy(currentPosition);
+        newSegment.object3D.scale.copy(currentScale);
       });
       
       this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
@@ -346,12 +352,13 @@ AFRAME.registerComponent('lsystem', {
       let newSegmentObject3D = segmentObject3D.clone();
       newSegmentObject3D.quaternion.copy(currentQuaternion);
       newSegmentObject3D.position.copy(currentPosition);
+      newSegmentObject3D.scale.copy(currentScale);
       newSegmentObject3D.matrixAutoUpdate = false;
       newSegmentObject3D.updateMatrix();
       this.mergeGroups.get(symbol + cappedColorIndex).geometry.merge(newSegmentObject3D.geometry, newSegmentObject3D.matrix);
     }
     let segmentLength = this.segmentLengthMap.get(mixin);
-    this.transformationSegment.translateX(-segmentLength);
+    this.transformationSegment.translateY(segmentLength * this.segmentLengthFactor);
   },
   
   updateTurtleGraphics: function() {

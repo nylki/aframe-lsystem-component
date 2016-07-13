@@ -1,8 +1,8 @@
-e <html>
+<html>
   <head>
-    <title>A-Frame L-System Component - Hilbert Curve</title>
-    <script src="../aframe.js"></script>
-    <script src="../aframe-lsystem-component.js"></script>
+    <title>A-Frame L-System Component - Tree</title>
+    <script src="../libs/aframe.js"></script>
+    <script src="../libs/aframe-lsystem-component.js"></script>
     <style media="screen">
       body {
         background-color: #94bfcf;
@@ -15,13 +15,15 @@ e <html>
       <a-assets>
         <a-mixin id="yellow" material="color: yellow;"></a-mixin>
         <a-mixin id="green" material="color: #528e1e;"></a-mixin>
-        <a-mixin id="red" material="color: #8e311e;"></a-mixin>
+        <a-mixin id="brown" material="color: #877504;"></a-mixin>
         
-        <a-mixin id="line" geometry="primitive: box; height: 0.1; width: 1.5; depth: 0.1;" material="metalness:0.2"></a-mixin>
+        <a-mixin id="line" geometry="primitive: cone; height: 2; radiusBottom: 1; radiusTop: 0.66; segmentsRadial:5; segmentsHeight:3" ></a-mixin>
+        
+        <a-mixin id="flower" geometry="primitive: sphere; radius: 1; segmentsWidth:6; segmentsHeight: 6"></a-mixin>
         
       </a-assets>
       
-      <a-entity position="0 -8 -12" rotation="0 45 -90" lsystem="axiom: X; productions: X:FFX[+XF][--F!X'][&FXFX]![^FX]'; segmentMixins: F:yellow line,green line,red line; angle: 22.5; iterations: 4; mergeGeometries:true">
+      <a-entity scale="2 2 2" position="0 -8 -12" rotation="0 45 0" lsystem="axiom: F!F!X; productions: X:FX[+!XF'][--!F+/X'][&!FXFX!F''][^!FX!F'']; segmentMixins: F:brown line,brown line,brown line,brown line,green line,green line,green line,yellow flower; angle: 60; iterations: 5;">
       </a-entity>
       
       

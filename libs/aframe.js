@@ -51,6 +51,99 @@ module.exports = {
 };
 
 },{}],2:[function(_dereq_,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = setTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    clearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        setTimeout(drainQueue, 0);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],3:[function(_dereq_,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -220,7 +313,7 @@ function localstorage(){
   } catch (e) {}
 }
 
-},{"./debug":3}],3:[function(_dereq_,module,exports){
+},{"./debug":4}],4:[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -419,87 +512,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":7}],4:[function(_dereq_,module,exports){
-'use strict';
-var isObj = _dereq_('is-obj');
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-
-function toObject(val) {
-	if (val === null || val === undefined) {
-		throw new TypeError('Sources cannot be null or undefined');
-	}
-
-	return Object(val);
-}
-
-function assignKey(to, from, key) {
-	var val = from[key];
-
-	if (val === undefined || val === null) {
-		return;
-	}
-
-	if (hasOwnProperty.call(to, key)) {
-		if (to[key] === undefined || to[key] === null) {
-			throw new TypeError('Cannot convert undefined or null to object (' + key + ')');
-		}
-	}
-
-	if (!hasOwnProperty.call(to, key) || !isObj(val)) {
-		to[key] = val;
-	} else {
-		to[key] = assign(Object(to[key]), from[key]);
-	}
-}
-
-function assign(to, from) {
-	if (to === from) {
-		return to;
-	}
-
-	from = Object(from);
-
-	for (var key in from) {
-		if (hasOwnProperty.call(from, key)) {
-			assignKey(to, from, key);
-		}
-	}
-
-	if (Object.getOwnPropertySymbols) {
-		var symbols = Object.getOwnPropertySymbols(from);
-
-		for (var i = 0; i < symbols.length; i++) {
-			if (propIsEnumerable.call(from, symbols[i])) {
-				assignKey(to, from, symbols[i]);
-			}
-		}
-	}
-
-	return to;
-}
-
-module.exports = function deepAssign(target) {
-	target = toObject(target);
-
-	for (var s = 1; s < arguments.length; s++) {
-		assign(target, arguments[s]);
-	}
-
-	return target;
-};
-
-},{"is-obj":6}],5:[function(_dereq_,module,exports){
-/*! (C) WebReflection Mit Style License */
-(function(t,n,r,i){"use strict";function st(e,t){for(var n=0,r=e.length;n<r;n++)gt(e[n],t)}function ot(e){for(var t=0,n=e.length,r;t<n;t++)r=e[t],it(r,w[at(r)])}function ut(e){return function(t){F(t)&&(gt(t,e),st(t.querySelectorAll(E),e))}}function at(e){var t=R.call(e,"is"),n=e.nodeName.toUpperCase(),r=x.call(b,t?m+t.toUpperCase():v+n);return t&&-1<r&&!ft(n,t)?-1:r}function ft(e,t){return-1<E.indexOf(e+'[is="'+t+'"]')}function lt(e){var t=e.currentTarget,n=e.attrChange,r=e.attrName,i=e.target;Y&&(!i||i===t)&&t.attributeChangedCallback&&r!=="style"&&e.prevValue!==e.newValue&&t.attributeChangedCallback(r,n===e[f]?null:e.prevValue,n===e[c]?null:e.newValue)}function ct(e){var t=ut(e);return function(e){$.push(t,e.target)}}function ht(e){G&&(G=!1,e.currentTarget.removeEventListener(p,ht)),st((e.target||n).querySelectorAll(E),e.detail===u?u:o),j&&vt()}function pt(e,t){var n=this;U.call(n,e,t),Z.call(n,{target:n})}function dt(e,t){P(e,t),nt?nt.observe(e,X):(Q&&(e.setAttribute=pt,e[s]=tt(e),e.addEventListener(d,Z)),e.addEventListener(h,lt)),e.createdCallback&&Y&&(e.created=!0,e.createdCallback(),e.created=!1)}function vt(){for(var e,t=0,n=I.length;t<n;t++)e=I[t],S.contains(e)||(n--,I.splice(t--,1),gt(e,u))}function mt(e){throw new Error("A "+e+" type is already registered")}function gt(e,t){var n,r=at(e);-1<r&&(rt(e,w[r]),r=0,t===o&&!e[o]?(e[u]=!1,e[o]=!0,r=1,j&&x.call(I,e)<0&&I.push(e)):t===u&&!e[u]&&(e[o]=!1,e[u]=!0,r=1),r&&(n=e[t+"Callback"])&&n.call(e))}if(i in n)return;var s="__"+i+(Math.random()*1e5>>0),o="attached",u="detached",a="extends",f="ADDITION",l="MODIFICATION",c="REMOVAL",h="DOMAttrModified",p="DOMContentLoaded",d="DOMSubtreeModified",v="<",m="=",g=/^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/,y=["ANNOTATION-XML","COLOR-PROFILE","FONT-FACE","FONT-FACE-SRC","FONT-FACE-URI","FONT-FACE-FORMAT","FONT-FACE-NAME","MISSING-GLYPH"],b=[],w=[],E="",S=n.documentElement,x=b.indexOf||function(e){for(var t=this.length;t--&&this[t]!==e;);return t},T=r.prototype,N=T.hasOwnProperty,C=T.isPrototypeOf,k=r.defineProperty,L=r.getOwnPropertyDescriptor,A=r.getOwnPropertyNames,O=r.getPrototypeOf,M=r.setPrototypeOf,_=!!r.__proto__,D=r.create||function yt(e){return e?(yt.prototype=e,new yt):this},P=M||(_?function(e,t){return e.__proto__=t,e}:A&&L?function(){function e(e,t){for(var n,r=A(t),i=0,s=r.length;i<s;i++)n=r[i],N.call(e,n)||k(e,n,L(t,n))}return function(t,n){do e(t,n);while((n=O(n))&&!C.call(n,t));return t}}():function(e,t){for(var n in t)e[n]=t[n];return e}),H=t.MutationObserver||t.WebKitMutationObserver,B=(t.HTMLElement||t.Element||t.Node).prototype,j=!C.call(B,S),F=j?function(e){return e.nodeType===1}:function(e){return C.call(B,e)},I=j&&[],q=B.cloneNode,R=B.getAttribute,U=B.setAttribute,z=B.removeAttribute,W=n.createElement,X=H&&{attributes:!0,characterData:!0,attributeOldValue:!0},V=H||function(e){Q=!1,S.removeEventListener(h,V)},$,J=t.requestAnimationFrame||t.webkitRequestAnimationFrame||t.mozRequestAnimationFrame||t.msRequestAnimationFrame||function(e){setTimeout(e,10)},K=!1,Q=!0,G=!0,Y=!0,Z,et,tt,nt,rt,it;M||_?(rt=function(e,t){C.call(t,e)||dt(e,t)},it=dt):(rt=function(e,t){e[s]||(e[s]=r(!0),dt(e,t))},it=rt),j?(Q=!1,function(){var t=L(B,"addEventListener"),n=t.value,r=function(e){var t=new CustomEvent(h,{bubbles:!0});t.attrName=e,t.prevValue=R.call(this,e),t.newValue=null,t[c]=t.attrChange=2,z.call(this,e),this.dispatchEvent(t)},i=function(t,n){var r=this.hasAttribute(t),i=r&&R.call(this,t);e=new CustomEvent(h,{bubbles:!0}),U.call(this,t,n),e.attrName=t,e.prevValue=r?i:null,e.newValue=n,r?e[l]=e.attrChange=1:e[f]=e.attrChange=0,this.dispatchEvent(e)},o=function(e){var t=e.currentTarget,n=t[s],r=e.propertyName,i;n.hasOwnProperty(r)&&(n=n[r],i=new CustomEvent(h,{bubbles:!0}),i.attrName=n.name,i.prevValue=n.value||null,i.newValue=n.value=t[r]||null,i.prevValue==null?i[f]=i.attrChange=0:i[l]=i.attrChange=1,t.dispatchEvent(i))};t.value=function(e,t,u){e===h&&this.attributeChangedCallback&&this.setAttribute!==i&&(this[s]={className:{name:"class",value:this.className}},this.setAttribute=i,this.removeAttribute=r,n.call(this,"propertychange",o)),n.call(this,e,t,u)},k(B,"addEventListener",t)}()):H||(S.addEventListener(h,V),S.setAttribute(s,1),S.removeAttribute(s),Q&&(Z=function(e){var t=this,n,r,i;if(t===e.target){n=t[s],t[s]=r=tt(t);for(i in r){if(!(i in n))return et(0,t,i,n[i],r[i],f);if(r[i]!==n[i])return et(1,t,i,n[i],r[i],l)}for(i in n)if(!(i in r))return et(2,t,i,n[i],r[i],c)}},et=function(e,t,n,r,i,s){var o={attrChange:e,currentTarget:t,attrName:n,prevValue:r,newValue:i};o[s]=e,lt(o)},tt=function(e){for(var t,n,r={},i=e.attributes,s=0,o=i.length;s<o;s++)t=i[s],n=t.name,n!=="setAttribute"&&(r[n]=t.value);return r})),n[i]=function(t,r){c=t.toUpperCase(),K||(K=!0,H?(nt=function(e,t){function n(e,t){for(var n=0,r=e.length;n<r;t(e[n++]));}return new H(function(r){for(var i,s,o,u=0,a=r.length;u<a;u++)i=r[u],i.type==="childList"?(n(i.addedNodes,e),n(i.removedNodes,t)):(s=i.target,Y&&s.attributeChangedCallback&&i.attributeName!=="style"&&(o=R.call(s,i.attributeName),o!==i.oldValue&&s.attributeChangedCallback(i.attributeName,i.oldValue,o)))})}(ut(o),ut(u)),nt.observe(n,{childList:!0,subtree:!0})):($=[],J(function d(){while($.length)$.shift().call(null,$.shift());J(d)}),n.addEventListener("DOMNodeInserted",ct(o)),n.addEventListener("DOMNodeRemoved",ct(u))),n.addEventListener(p,ht),n.addEventListener("readystatechange",ht),n.createElement=function(e,t){var r=W.apply(n,arguments),i=""+e,s=x.call(b,(t?m:v)+(t||i).toUpperCase()),o=-1<s;return t&&(r.setAttribute("is",t=t.toLowerCase()),o&&(o=ft(i.toUpperCase(),t))),Y=!n.createElement.innerHTMLHelper,o&&it(r,w[s]),r},B.cloneNode=function(e){var t=q.call(this,!!e),n=at(t);return-1<n&&it(t,w[n]),e&&ot(t.querySelectorAll(E)),t}),-2<x.call(b,m+c)+x.call(b,v+c)&&mt(t);if(!g.test(c)||-1<x.call(y,c))throw new Error("The type "+t+" is invalid");var i=function(){return f?n.createElement(l,c):n.createElement(l)},s=r||T,f=N.call(s,a),l=f?r[a].toUpperCase():c,c,h;return f&&-1<x.call(b,v+l)&&mt(l),h=b.push((f?m:v)+c)-1,E=E.concat(E.length?",":"",f?l+'[is="'+t.toLowerCase()+'"]':l),i.prototype=w[h]=N.call(s,"prototype")?s.prototype:D(B),st(n.querySelectorAll(E),o),i}})(window,document,Object,"registerElement");
-},{}],6:[function(_dereq_,module,exports){
-'use strict';
-module.exports = function (x) {
-	var type = typeof x;
-	return x !== null && (type === 'object' || type === 'function');
-};
-
-},{}],7:[function(_dereq_,module,exports){
+},{"ms":5}],5:[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -626,7 +639,87 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
+},{}],6:[function(_dereq_,module,exports){
+'use strict';
+var isObj = _dereq_('is-obj');
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+function toObject(val) {
+	if (val === null || val === undefined) {
+		throw new TypeError('Sources cannot be null or undefined');
+	}
+
+	return Object(val);
+}
+
+function assignKey(to, from, key) {
+	var val = from[key];
+
+	if (val === undefined || val === null) {
+		return;
+	}
+
+	if (hasOwnProperty.call(to, key)) {
+		if (to[key] === undefined || to[key] === null) {
+			throw new TypeError('Cannot convert undefined or null to object (' + key + ')');
+		}
+	}
+
+	if (!hasOwnProperty.call(to, key) || !isObj(val)) {
+		to[key] = val;
+	} else {
+		to[key] = assign(Object(to[key]), from[key]);
+	}
+}
+
+function assign(to, from) {
+	if (to === from) {
+		return to;
+	}
+
+	from = Object(from);
+
+	for (var key in from) {
+		if (hasOwnProperty.call(from, key)) {
+			assignKey(to, from, key);
+		}
+	}
+
+	if (Object.getOwnPropertySymbols) {
+		var symbols = Object.getOwnPropertySymbols(from);
+
+		for (var i = 0; i < symbols.length; i++) {
+			if (propIsEnumerable.call(from, symbols[i])) {
+				assignKey(to, from, symbols[i]);
+			}
+		}
+	}
+
+	return to;
+}
+
+module.exports = function deepAssign(target) {
+	target = toObject(target);
+
+	for (var s = 1; s < arguments.length; s++) {
+		assign(target, arguments[s]);
+	}
+
+	return target;
+};
+
+},{"is-obj":7}],7:[function(_dereq_,module,exports){
+'use strict';
+module.exports = function (x) {
+	var type = typeof x;
+	return x !== null && (type === 'object' || type === 'function');
+};
+
 },{}],8:[function(_dereq_,module,exports){
+/*! (C) WebReflection Mit Style License */
+(function(t,n,r,i){"use strict";function st(e,t){for(var n=0,r=e.length;n<r;n++)gt(e[n],t)}function ot(e){for(var t=0,n=e.length,r;t<n;t++)r=e[t],it(r,w[at(r)])}function ut(e){return function(t){F(t)&&(gt(t,e),st(t.querySelectorAll(E),e))}}function at(e){var t=R.call(e,"is"),n=e.nodeName.toUpperCase(),r=x.call(b,t?m+t.toUpperCase():v+n);return t&&-1<r&&!ft(n,t)?-1:r}function ft(e,t){return-1<E.indexOf(e+'[is="'+t+'"]')}function lt(e){var t=e.currentTarget,n=e.attrChange,r=e.attrName,i=e.target;Y&&(!i||i===t)&&t.attributeChangedCallback&&r!=="style"&&e.prevValue!==e.newValue&&t.attributeChangedCallback(r,n===e[f]?null:e.prevValue,n===e[c]?null:e.newValue)}function ct(e){var t=ut(e);return function(e){$.push(t,e.target)}}function ht(e){G&&(G=!1,e.currentTarget.removeEventListener(p,ht)),st((e.target||n).querySelectorAll(E),e.detail===u?u:o),j&&vt()}function pt(e,t){var n=this;U.call(n,e,t),Z.call(n,{target:n})}function dt(e,t){P(e,t),nt?nt.observe(e,X):(Q&&(e.setAttribute=pt,e[s]=tt(e),e.addEventListener(d,Z)),e.addEventListener(h,lt)),e.createdCallback&&Y&&(e.created=!0,e.createdCallback(),e.created=!1)}function vt(){for(var e,t=0,n=I.length;t<n;t++)e=I[t],S.contains(e)||(n--,I.splice(t--,1),gt(e,u))}function mt(e){throw new Error("A "+e+" type is already registered")}function gt(e,t){var n,r=at(e);-1<r&&(rt(e,w[r]),r=0,t===o&&!e[o]?(e[u]=!1,e[o]=!0,r=1,j&&x.call(I,e)<0&&I.push(e)):t===u&&!e[u]&&(e[o]=!1,e[u]=!0,r=1),r&&(n=e[t+"Callback"])&&n.call(e))}if(i in n)return;var s="__"+i+(Math.random()*1e5>>0),o="attached",u="detached",a="extends",f="ADDITION",l="MODIFICATION",c="REMOVAL",h="DOMAttrModified",p="DOMContentLoaded",d="DOMSubtreeModified",v="<",m="=",g=/^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/,y=["ANNOTATION-XML","COLOR-PROFILE","FONT-FACE","FONT-FACE-SRC","FONT-FACE-URI","FONT-FACE-FORMAT","FONT-FACE-NAME","MISSING-GLYPH"],b=[],w=[],E="",S=n.documentElement,x=b.indexOf||function(e){for(var t=this.length;t--&&this[t]!==e;);return t},T=r.prototype,N=T.hasOwnProperty,C=T.isPrototypeOf,k=r.defineProperty,L=r.getOwnPropertyDescriptor,A=r.getOwnPropertyNames,O=r.getPrototypeOf,M=r.setPrototypeOf,_=!!r.__proto__,D=r.create||function yt(e){return e?(yt.prototype=e,new yt):this},P=M||(_?function(e,t){return e.__proto__=t,e}:A&&L?function(){function e(e,t){for(var n,r=A(t),i=0,s=r.length;i<s;i++)n=r[i],N.call(e,n)||k(e,n,L(t,n))}return function(t,n){do e(t,n);while((n=O(n))&&!C.call(n,t));return t}}():function(e,t){for(var n in t)e[n]=t[n];return e}),H=t.MutationObserver||t.WebKitMutationObserver,B=(t.HTMLElement||t.Element||t.Node).prototype,j=!C.call(B,S),F=j?function(e){return e.nodeType===1}:function(e){return C.call(B,e)},I=j&&[],q=B.cloneNode,R=B.getAttribute,U=B.setAttribute,z=B.removeAttribute,W=n.createElement,X=H&&{attributes:!0,characterData:!0,attributeOldValue:!0},V=H||function(e){Q=!1,S.removeEventListener(h,V)},$,J=t.requestAnimationFrame||t.webkitRequestAnimationFrame||t.mozRequestAnimationFrame||t.msRequestAnimationFrame||function(e){setTimeout(e,10)},K=!1,Q=!0,G=!0,Y=!0,Z,et,tt,nt,rt,it;M||_?(rt=function(e,t){C.call(t,e)||dt(e,t)},it=dt):(rt=function(e,t){e[s]||(e[s]=r(!0),dt(e,t))},it=rt),j?(Q=!1,function(){var t=L(B,"addEventListener"),n=t.value,r=function(e){var t=new CustomEvent(h,{bubbles:!0});t.attrName=e,t.prevValue=R.call(this,e),t.newValue=null,t[c]=t.attrChange=2,z.call(this,e),this.dispatchEvent(t)},i=function(t,n){var r=this.hasAttribute(t),i=r&&R.call(this,t);e=new CustomEvent(h,{bubbles:!0}),U.call(this,t,n),e.attrName=t,e.prevValue=r?i:null,e.newValue=n,r?e[l]=e.attrChange=1:e[f]=e.attrChange=0,this.dispatchEvent(e)},o=function(e){var t=e.currentTarget,n=t[s],r=e.propertyName,i;n.hasOwnProperty(r)&&(n=n[r],i=new CustomEvent(h,{bubbles:!0}),i.attrName=n.name,i.prevValue=n.value||null,i.newValue=n.value=t[r]||null,i.prevValue==null?i[f]=i.attrChange=0:i[l]=i.attrChange=1,t.dispatchEvent(i))};t.value=function(e,t,u){e===h&&this.attributeChangedCallback&&this.setAttribute!==i&&(this[s]={className:{name:"class",value:this.className}},this.setAttribute=i,this.removeAttribute=r,n.call(this,"propertychange",o)),n.call(this,e,t,u)},k(B,"addEventListener",t)}()):H||(S.addEventListener(h,V),S.setAttribute(s,1),S.removeAttribute(s),Q&&(Z=function(e){var t=this,n,r,i;if(t===e.target){n=t[s],t[s]=r=tt(t);for(i in r){if(!(i in n))return et(0,t,i,n[i],r[i],f);if(r[i]!==n[i])return et(1,t,i,n[i],r[i],l)}for(i in n)if(!(i in r))return et(2,t,i,n[i],r[i],c)}},et=function(e,t,n,r,i,s){var o={attrChange:e,currentTarget:t,attrName:n,prevValue:r,newValue:i};o[s]=e,lt(o)},tt=function(e){for(var t,n,r={},i=e.attributes,s=0,o=i.length;s<o;s++)t=i[s],n=t.name,n!=="setAttribute"&&(r[n]=t.value);return r})),n[i]=function(t,r){c=t.toUpperCase(),K||(K=!0,H?(nt=function(e,t){function n(e,t){for(var n=0,r=e.length;n<r;t(e[n++]));}return new H(function(r){for(var i,s,o,u=0,a=r.length;u<a;u++)i=r[u],i.type==="childList"?(n(i.addedNodes,e),n(i.removedNodes,t)):(s=i.target,Y&&s.attributeChangedCallback&&i.attributeName!=="style"&&(o=R.call(s,i.attributeName),o!==i.oldValue&&s.attributeChangedCallback(i.attributeName,i.oldValue,o)))})}(ut(o),ut(u)),nt.observe(n,{childList:!0,subtree:!0})):($=[],J(function d(){while($.length)$.shift().call(null,$.shift());J(d)}),n.addEventListener("DOMNodeInserted",ct(o)),n.addEventListener("DOMNodeRemoved",ct(u))),n.addEventListener(p,ht),n.addEventListener("readystatechange",ht),n.createElement=function(e,t){var r=W.apply(n,arguments),i=""+e,s=x.call(b,(t?m:v)+(t||i).toUpperCase()),o=-1<s;return t&&(r.setAttribute("is",t=t.toLowerCase()),o&&(o=ft(i.toUpperCase(),t))),Y=!n.createElement.innerHTMLHelper,o&&it(r,w[s]),r},B.cloneNode=function(e){var t=q.call(this,!!e),n=at(t);return-1<n&&it(t,w[n]),e&&ot(t.querySelectorAll(E)),t}),-2<x.call(b,m+c)+x.call(b,v+c)&&mt(t);if(!g.test(c)||-1<x.call(y,c))throw new Error("The type "+t+" is invalid");var i=function(){return f?n.createElement(l,c):n.createElement(l)},s=r||T,f=N.call(s,a),l=f?r[a].toUpperCase():c,c,h;return f&&-1<x.call(b,v+l)&&mt(l),h=b.push((f?m:v)+c)-1,E=E.concat(E.length?",":"",f?l+'[is="'+t.toLowerCase()+'"]':l),i.prototype=w[h]=N.call(s,"prototype")?s.prototype:D(B),st(n.querySelectorAll(E),o),i}})(window,document,Object,"registerElement");
+},{}],9:[function(_dereq_,module,exports){
 /* eslint-disable no-unused-vars */
 'use strict';
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -667,7 +760,7 @@ module.exports = Object.assign || function (target, source) {
 	return to;
 };
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 (function (global){
 var performance = global.performance || {};
 
@@ -699,99 +792,6 @@ present.conflict();
 module.exports = present;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-
-},{}],10:[function(_dereq_,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = setTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    clearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
 
 },{}],11:[function(_dereq_,module,exports){
 (function(root) {
@@ -990,8 +990,6 @@ process.umask = function() { return 0; };
 })(this);
 
 },{}],12:[function(_dereq_,module,exports){
-
-
 /*
 
 style-attr
@@ -1004,21 +1002,25 @@ Very simple parsing and stringifying of style attributes.
 
 Convert a style attribute string to an object.
 
+- input: string (eg. anything you might see in a style attribute)
+- return: object
+
 */
-function parse(raw) {
-  var trim = function (s) {
-    return s.trim();
-  };
+function parse (raw) {
+  var trim = function (s) { return s.trim(); };
   var obj = {};
 
-  getKeyValueChunks(raw).map(trim).filter(Boolean).forEach(function (item) {
-    // split with `.indexOf` rather than `.split` because the value may also contain colons.
-    var pos = item.indexOf(':');
-    var key = item.substr(0, pos).trim();
-    var val = item.substr(pos + 1).trim();
+  getKeyValueChunks(raw)
+    .map(trim)
+    .filter(Boolean)
+    .forEach(function (item) {
+      // split with `.indexOf` rather than `.split` because the value may also contain colons.
+      var pos = item.indexOf(':');
+      var key = item.substr(0, pos).trim();
+      var val = item.substr(pos + 1).trim();
 
-    obj[key] = val;
-  });
+      obj[key] = val;
+    });
 
   return obj;
 }
@@ -1030,8 +1032,11 @@ function parse(raw) {
 
 Split a string into chunks matching `<key>: <value>`
 
+- input: string
+- return: Array<string>
+
 */
-function getKeyValueChunks(raw) {
+function getKeyValueChunks (raw) {
   var chunks = [];
   var offset = 0;
   var sep = ';';
@@ -1040,9 +1045,7 @@ function getKeyValueChunks(raw) {
   var nextSplit;
   while (offset < raw.length) {
     nextSplit = raw.indexOf(sep, offset);
-    if (nextSplit === -1) {
-      nextSplit = raw.length;
-    }
+    if (nextSplit === -1) { nextSplit = raw.length; }
 
     chunk += raw.substring(offset, nextSplit);
 
@@ -1068,11 +1071,16 @@ function getKeyValueChunks(raw) {
 
 Convert an object into an attribute string
 
+- input: object
+- return: string
+
 */
-function stringify(obj) {
-  return Object.keys(obj).map(function (key) {
-    return key + ':' + obj[key];
-  }).join(';');
+function stringify (obj) {
+  return Object.keys(obj)
+    .map(function (key) {
+      return key + ':' + obj[key];
+    })
+    .join(';');
 }
 
 /*
@@ -1082,14 +1090,18 @@ function stringify(obj) {
 
 Normalize an attribute string (eg. collapse duplicates)
 
+- input: string
+- return: string
+
 */
-function normalize(str) {
+function normalize (str) {
   return stringify(parse(str));
 }
 
 module.exports.parse = parse;
 module.exports.stringify = stringify;
 module.exports.normalize = normalize;
+
 },{}],13:[function(_dereq_,module,exports){
 /**
 * @author Tim Knip / http://www.floorplanner.com/ / tim at floorplanner.com
@@ -56567,7 +56579,8 @@ module.exports.Component = registerComponent('camera', {
     active: { default: true },
     far: { default: 10000 },
     fov: { default: 80, min: 0 },
-    near: { default: 0.5, min: 0 }
+    near: { default: 0.5, min: 0 },
+    zoom: { default: 1, min: 0 }
   },
 
   /**
@@ -56600,6 +56613,7 @@ module.exports.Component = registerComponent('camera', {
     camera.far = data.far;
     camera.fov = data.fov;
     camera.near = data.near;
+    camera.zoom = data.zoom;
     camera.updateProjectionMatrix();
 
     // Active property did not change.
@@ -56616,12 +56630,9 @@ module.exports.Component = registerComponent('camera', {
   }
 });
 
-},{"../core/component":51,"../lib/three":99}],21:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95}],21:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 var THREE = _dereq_('../lib/three');
-
-var loader = new THREE.ColladaLoader();
-loader.options.convertUpAxis = true;
 
 module.exports.Component = registerComponent('collada-model', {
   schema: {
@@ -56630,6 +56641,8 @@ module.exports.Component = registerComponent('collada-model', {
 
   init: function () {
     this.model = null;
+    this.loader = new THREE.ColladaLoader();
+    this.loader.options.convertUpAxis = true;
   },
 
   update: function () {
@@ -56641,7 +56654,7 @@ module.exports.Component = registerComponent('collada-model', {
 
     this.remove();
 
-    loader.load(src, function (colladaModel) {
+    this.loader.load(src, function (colladaModel) {
       self.model = colladaModel.scene;
       el.setObject3D('mesh', self.model);
       el.emit('model-loaded', {format: 'collada', model: self.model});
@@ -56654,7 +56667,7 @@ module.exports.Component = registerComponent('collada-model', {
   }
 });
 
-},{"../core/component":51,"../lib/three":99}],22:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95}],22:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 var utils = _dereq_('../utils/');
 
@@ -56794,9 +56807,10 @@ module.exports.Component = registerComponent('cursor', {
   }
 });
 
-},{"../core/component":51,"../utils/":112}],23:[function(_dereq_,module,exports){
+},{"../core/component":51,"../utils/":109}],23:[function(_dereq_,module,exports){
 var debug = _dereq_('../utils/debug');
 var geometries = _dereq_('../core/geometry').geometries;
+var geometryNames = _dereq_('../core/geometry').geometryNames;
 var registerComponent = _dereq_('../core/component').registerComponent;
 var THREE = _dereq_('../lib/three');
 
@@ -56811,7 +56825,7 @@ module.exports.Component = registerComponent('geometry', {
   schema: {
     buffer: { default: true },
     mergeTo: { type: 'selector' },
-    primitive: { default: '' },
+    primitive: { default: 'box', oneOf: geometryNames },
     skipCache: { default: false }
   },
 
@@ -56917,7 +56931,7 @@ module.exports.Component = registerComponent('geometry', {
   }
 });
 
-},{"../core/component":51,"../core/geometry":52,"../lib/three":99,"../utils/debug":111}],24:[function(_dereq_,module,exports){
+},{"../core/component":51,"../core/geometry":52,"../lib/three":95,"../utils/debug":107}],24:[function(_dereq_,module,exports){
 _dereq_('./camera');
 _dereq_('./collada-model');
 _dereq_('./cursor');
@@ -57063,7 +57077,7 @@ function getLight (data) {
   }
 }
 
-},{"../core/component":51,"../lib/three":99,"../utils":112,"../utils/debug":111}],26:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils":109,"../utils/debug":107}],26:[function(_dereq_,module,exports){
 var debug = _dereq_('../utils/debug');
 var coordinates = _dereq_('../utils/coordinates');
 var registerComponent = _dereq_('../core/component').registerComponent;
@@ -57159,7 +57173,7 @@ module.exports.Component = registerComponent('look-at', {
   }
 });
 
-},{"../core/component":51,"../lib/three":99,"../utils/coordinates":110,"../utils/debug":111}],27:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils/coordinates":106,"../utils/debug":107}],27:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 var THREE = _dereq_('../lib/three');
 var isMobile = _dereq_('../utils/').isMobile();
@@ -57286,7 +57300,14 @@ module.exports.Component = registerComponent('look-controls', {
       var sceneEl = this.el.sceneEl;
       var rotation;
       hmdEuler.setFromQuaternion(hmdQuaternion, 'YXZ');
-      if (!sceneEl.is('vr-mode') || isNullVector(hmdEuler) || !this.data.hmdEnabled) {
+      if (isMobile) {
+        // In mobile we allow camera rotation with touch events and sensors
+        rotation = {
+          x: radToDeg(hmdEuler.x) + radToDeg(pitchObject.rotation.x),
+          y: radToDeg(hmdEuler.y) + radToDeg(yawObject.rotation.y),
+          z: radToDeg(hmdEuler.z)
+        };
+      } else if (!sceneEl.is('vr-mode') || isNullVector(hmdEuler) || !this.data.hmdEnabled) {
         // Mouse look only if HMD disabled or no info coming from the sensors
         rotation = {
           x: radToDeg(pitchObject.rotation.x),
@@ -57294,22 +57315,13 @@ module.exports.Component = registerComponent('look-controls', {
           z: 0
         };
       } else {
-        if (isMobile) {
-          // In mobile we allow camera rotation with touch events and sensors
-          rotation = {
-            x: radToDeg(hmdEuler.x) + radToDeg(pitchObject.rotation.x),
-            y: radToDeg(hmdEuler.y) + radToDeg(yawObject.rotation.y),
-            z: radToDeg(hmdEuler.z)
-          };
-        } else {
-          // Mouse rotation ignored with an active headset.
-          // The user head rotation takes priority
-          rotation = {
-            x: radToDeg(hmdEuler.x),
-            y: radToDeg(hmdEuler.y),
-            z: radToDeg(hmdEuler.z)
-          };
-        }
+        // Mouse rotation ignored with an active headset.
+        // The user head rotation takes priority
+        rotation = {
+          x: radToDeg(hmdEuler.x),
+          y: radToDeg(hmdEuler.y),
+          z: radToDeg(hmdEuler.z)
+        };
       }
       this.el.setAttribute('rotation', rotation);
     };
@@ -57415,7 +57427,7 @@ function isNullVector (vector) {
   return vector.x === 0 && vector.y === 0 && vector.z === 0;
 }
 
-},{"../core/component":51,"../lib/three":99,"../utils/":112}],28:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils/":109}],28:[function(_dereq_,module,exports){
 /* global Promise */
 var utils = _dereq_('../utils/');
 var component = _dereq_('../core/component');
@@ -57440,7 +57452,8 @@ module.exports.Component = registerComponent('material', {
     transparent: { default: false },
     opacity: { default: 1.0, min: 0.0, max: 1.0 },
     side: { default: 'front', oneOf: ['front', 'back', 'double'] },
-    depthTest: { default: true }
+    depthTest: { default: true },
+    flatShading: { default: false }
   },
 
   init: function () {
@@ -57499,12 +57512,15 @@ module.exports.Component = registerComponent('material', {
   updateShader: function (shaderName) {
     var data = this.data;
     var Shader = shaders[shaderName] && shaders[shaderName].Shader;
-    var material;
+    var shaderInstance;
+
     if (!Shader) { throw new Error('Unknown shader ' + shaderName); }
-    this.shader = new Shader();
-    this.shader.el = this.el;
-    material = this.shader.init(data);
-    this.setMaterial(material);
+
+    // Get material from A-Frame shader.
+    shaderInstance = this.shader = new Shader();
+    shaderInstance.el = this.el;
+    shaderInstance.init(data);
+    this.setMaterial(shaderInstance.material);
     this.updateSchema(data);
   },
 
@@ -57515,6 +57531,7 @@ module.exports.Component = registerComponent('material', {
     material.opacity = data.opacity;
     material.transparent = data.transparent !== false || data.opacity < 1.0;
     material.depthTest = data.depthTest !== false;
+    material.shading = data.flatShading ? THREE.FlatShading : THREE.SmoothShading;
   },
 
   /**
@@ -57576,7 +57593,7 @@ function disposeMaterial (material, system) {
   system.unregisterMaterial(material);
 }
 
-},{"../core/component":51,"../core/shader":59,"../lib/three":99,"../utils/":112}],29:[function(_dereq_,module,exports){
+},{"../core/component":51,"../core/shader":59,"../lib/three":95,"../utils/":109}],29:[function(_dereq_,module,exports){
 var debug = _dereq_('../utils/debug');
 var registerComponent = _dereq_('../core/component').registerComponent;
 var THREE = _dereq_('../lib/three');
@@ -57652,7 +57669,7 @@ module.exports.Component = registerComponent('obj-model', {
   }
 });
 
-},{"../core/component":51,"../lib/three":99,"../utils/debug":111}],30:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils/debug":107}],30:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 
 module.exports.Component = registerComponent('position', {
@@ -57809,7 +57826,7 @@ module.exports.Component = registerComponent('raycaster', {
   })()
 });
 
-},{"../core/component":51,"../lib/three":99}],32:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95}],32:[function(_dereq_,module,exports){
 var degToRad = _dereq_('../lib/three').Math.degToRad;
 var registerComponent = _dereq_('../core/component').registerComponent;
 
@@ -57827,7 +57844,7 @@ module.exports.Component = registerComponent('rotation', {
   }
 });
 
-},{"../core/component":51,"../lib/three":99}],33:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95}],33:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 
 // Avoids triggering a zero-determinant which makes object3D matrix non-invertible.
@@ -57980,7 +57997,7 @@ function getFog (data) {
   return fog;
 }
 
-},{"../../core/component":51,"../../lib/three":99,"../../utils/debug":111}],37:[function(_dereq_,module,exports){
+},{"../../core/component":51,"../../lib/three":95,"../../utils/debug":107}],37:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../../core/component').registerComponent;
 var shouldCaptureKeyEvent = _dereq_('../../utils/').shouldCaptureKeyEvent;
 var THREE = _dereq_('../../lib/three');
@@ -58023,7 +58040,7 @@ module.exports.Component = registerComponent('keyboard-shortcuts', {
   }
 });
 
-},{"../../core/component":51,"../../lib/three":99,"../../utils/":112}],38:[function(_dereq_,module,exports){
+},{"../../core/component":51,"../../lib/three":95,"../../utils/":109}],38:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../../core/component').registerComponent;
 var RStats = _dereq_('../../../vendor/rStats');
 _dereq_('../../../vendor/rStats.extras');
@@ -58087,11 +58104,10 @@ function createStats (scene) {
   });
 }
 
-},{"../../../vendor/rStats":120,"../../../vendor/rStats.extras":119,"../../core/component":51,"../../lib/rStatsAframe":98}],39:[function(_dereq_,module,exports){
+},{"../../../vendor/rStats":116,"../../../vendor/rStats.extras":115,"../../core/component":51,"../../lib/rStatsAframe":94}],39:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../../core/component').registerComponent;
 var THREE = _dereq_('../../lib/three');
 var utils = _dereq_('../../utils/');
-var queryParams = utils.queryParams;
 
 var dummyDolly = new THREE.Object3D();
 var controls = new THREE.VRControls(dummyDolly);
@@ -58108,17 +58124,17 @@ var ORIENTATION_MODAL_CLASS = 'a-orientation-modal';
  * UI for entering VR mode.
  */
 module.exports.Component = registerComponent('vr-mode-ui', {
-  dependencies: [ 'canvas' ],
+  dependencies: ['canvas'],
 
   schema: {
-    enabled: { default: true }
+    enabled: {default: true}
   },
 
   init: function () {
     var self = this;
     var scene = this.el;
 
-    if (queryParams.ui === 'false') { return; }
+    if (utils.getUrlParameter('ui') === 'false') { return; }
 
     this.enterVR = scene.enterVR.bind(scene);
     this.exitVR = scene.exitVR.bind(scene);
@@ -58144,7 +58160,7 @@ module.exports.Component = registerComponent('vr-mode-ui', {
   update: function () {
     var scene = this.el;
 
-    if (!this.data.enabled || this.insideLoader || queryParams.ui === 'false') {
+    if (!this.data.enabled || this.insideLoader || utils.getUrlParameter('ui') === 'false') {
       return this.remove();
     }
     if (this.enterVREl || this.orientationModalEl) { return; }
@@ -58287,7 +58303,7 @@ function createOrientationModal (exitVRHandler) {
   return modal;
 }
 
-},{"../../core/component":51,"../../lib/three":99,"../../utils/":112}],40:[function(_dereq_,module,exports){
+},{"../../core/component":51,"../../lib/three":95,"../../utils/":109}],40:[function(_dereq_,module,exports){
 var debug = _dereq_('../utils/debug');
 var registerComponent = _dereq_('../core/component').registerComponent;
 var THREE = _dereq_('../lib/three');
@@ -58306,17 +58322,18 @@ module.exports.Component = registerComponent('sound', {
     volume: { default: 1 }
   },
 
+  multiple: true,
+
   init: function () {
     this.listener = null;
     this.sound = null;
+    this.playSound = this.playSound.bind(this);
   },
 
   update: function (oldData) {
     var data = this.data;
-    var el = this.el;
     var sound = this.sound;
     var srcChanged = data.src !== oldData.src;
-
     // Create new sound if not yet created or changing `src`.
     if (srcChanged) {
       if (!data.src) {
@@ -58331,22 +58348,51 @@ module.exports.Component = registerComponent('sound', {
     sound.setVolume(data.volume);
 
     if (data.on !== oldData.on) {
-      if (oldData.on) { el.removeEventListener(oldData.on); }
-      el.addEventListener(data.on, this.play.bind(this));
+      this.updateEventListener(oldData.on);
     }
 
     // All sound values set. Load in `src`.
     if (srcChanged) { sound.load(data.src); }
   },
 
+  /**
+  *  Update listener attached to the user defined on event.
+  */
+  updateEventListener: function (oldEvt) {
+    var el = this.el;
+    if (oldEvt) { el.removeEventListener(oldEvt, this.playSound); }
+    el.addEventListener(this.data.on, this.playSound);
+  },
+
+  removeEventListener: function () {
+    this.el.removeEventListener(this.data.on, this.playSound);
+  },
+
   remove: function () {
-    this.el.removeObject3D('sound');
+    this.removeEventListener();
+    this.el.removeObject3D(this.attrName);
     try {
       this.sound.disconnect();
     } catch (e) {
       // disconnect() will throw if it was never connected initially.
       warn('Audio source not properly disconnected');
     }
+  },
+
+  play: function () {
+    if (!this.sound) { return; }
+    if (this.sound.source.buffer && this.data.autoplay) {
+      this.sound.play();
+    }
+    this.updateEventListener();
+  },
+
+  pause: function () {
+    if (!this.sound) { return; }
+    if (this.sound.source.buffer && this.sound.isPlaying) {
+      this.sound.pause();
+    }
+    this.removeEventListener();
   },
 
   /**
@@ -58360,7 +58406,7 @@ module.exports.Component = registerComponent('sound', {
     var sound = this.sound;
 
     if (sound) {
-      this.stop();
+      this.stopSound();
       el.removeObject3D('sound');
     }
 
@@ -58378,7 +58424,7 @@ module.exports.Component = registerComponent('sound', {
     });
 
     sound = this.sound = new THREE.PositionalAudio(listener);
-    el.setObject3D('sound', sound);
+    el.setObject3D(this.attrName, sound);
 
     sound.source.onended = function () {
       sound.onEnded();
@@ -58388,23 +58434,18 @@ module.exports.Component = registerComponent('sound', {
     return sound;
   },
 
-  play: function () {
+  playSound: function () {
     if (!this.sound.source.buffer) { return; }
     this.sound.play();
   },
 
-  stop: function () {
+  stopSound: function () {
     if (!this.sound.source.buffer) { return; }
     this.sound.stop();
-  },
-
-  pause: function () {
-    if (!this.sound.source.buffer || !this.sound.isPlaying) { return; }
-    this.sound.pause();
   }
 });
 
-},{"../core/component":51,"../lib/three":99,"../utils/debug":111}],41:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils/debug":107}],41:[function(_dereq_,module,exports){
 var registerComponent = _dereq_('../core/component').registerComponent;
 
 /**
@@ -58580,7 +58621,7 @@ module.exports.Component = registerComponent('wasd-controls', {
     var rotation = new THREE.Euler(0, 0, 0, 'YXZ');
     return function (delta) {
       var velocity = this.velocity;
-      var elRotation = this.el.getAttribute('rotation');
+      var elRotation = this.el.getComputedAttribute('rotation');
       direction.copy(velocity);
       direction.multiplyScalar(delta);
       if (!elRotation) { return direction; }
@@ -58593,7 +58634,7 @@ module.exports.Component = registerComponent('wasd-controls', {
   })()
 });
 
-},{"../core/component":51,"../lib/three":99,"../utils/":112}],43:[function(_dereq_,module,exports){
+},{"../core/component":51,"../lib/three":95,"../utils/":109}],43:[function(_dereq_,module,exports){
 /**
  * Animation configuration options for TWEEN.js animations.
  * Used by `<a-animation>`.
@@ -58679,7 +58720,9 @@ var REPEATS = {
 
 var DEFAULTS = {
   attribute: 'rotation',
-  begin: '0',
+  begin: '',
+  end: '',
+  delay: 0,
   dur: 1000,
   easing: 'ease',
   direction: DIRECTIONS.normal,
@@ -58702,9 +58745,10 @@ var coordinates = _dereq_('../utils/').coordinates;
 var parseProperty = _dereq_('./schema').parseProperty;
 var registerElement = _dereq_('./a-register-element').registerElement;
 var TWEEN = _dereq_('tween.js');
-var utils = _dereq_('../utils/');
 var THREE = _dereq_('../lib/three');
+var utils = _dereq_('../utils/');
 
+var getComponentProperty = utils.entity.getComponentProperty;
 var DEFAULTS = constants.defaults;
 var DIRECTIONS = constants.directions;
 var EASING_FUNCTIONS = constants.easingFunctions;
@@ -58741,20 +58785,20 @@ module.exports.AAnimation = registerElement('a-animation', {
     attachedCallback: {
       value: function () {
         var self = this;
-        var el = self.el = self.parentNode;
+        var el = this.el = this.parentNode;
 
-        if (el.isNode) {
-          if (el.hasLoaded) {
-            init();
-          } else {
-            el.addEventListener('loaded', init.bind(self));
-          }
-        } else {
-          // To handle elements that are not yet `<a-entity>`s (e.g., templates).
-          el.addEventListener('nodeready', init.bind(self));
-        }
+        init();
 
         function init () {
+          if (!el.isPlaying) {
+            el.addEventListener('play', init);
+            return;
+          }
+          if (!el.hasLoaded) {
+            el.addEventListener('loaded', init);
+            return;
+          }
+
           self.applyMixin();
           self.update();
           self.load();
@@ -58792,8 +58836,8 @@ module.exports.AAnimation = registerElement('a-animation', {
         var el = self.el;
         var animationValues;
         var attribute = data.attribute;
-        var begin = parseInt(data.begin, 10);
-        var currentValue = getComputedAttributeFor(el, attribute);
+        var delay = parseInt(data.delay, 10);
+        var currentValue = getComponentProperty(el, attribute);
         var direction = self.getDirection(data.direction);
         var easing = EASING_FUNCTIONS[data.easing];
         var fill = data.fill;
@@ -58812,7 +58856,7 @@ module.exports.AAnimation = registerElement('a-animation', {
           self.count = repeat === Infinity ? 0 : parseInt(data.repeat, 10);
         }
 
-        if (isNaN(begin)) { begin = 0; }
+        if (isNaN(delay)) { delay = 0; }
 
         // Store initial state.
         self.initialValue = self.initialValue || cloneValue(currentValue);
@@ -58839,7 +58883,7 @@ module.exports.AAnimation = registerElement('a-animation', {
         // Create Tween.
         return new TWEEN.Tween(cloneValue(from))
           .to(to, data.dur)
-          .delay(begin)
+          .delay(delay)
           .easing(easing)
           .repeat(repeat)
           .yoyo(yoyo)
@@ -58856,14 +58900,22 @@ module.exports.AAnimation = registerElement('a-animation', {
     update: {
       value: function () {
         var data = this.data;
+        // Deprecation warning for begin when used as a delay.
+        if (data.begin !== '' && !isNaN(data.begin)) {
+          console.warn("Using 'begin' to specify a delay is deprecated. Use 'delay' instead.");
+          data.delay = data.begin;
+          data.begin = '';
+        }
         var begin = data.begin;
+        var end = data.end;
         // Cancel previous event listeners
-        this.removeEventListeners(this.evt);
-        this.addEventListeners(begin);
+        if (this.evt) this.removeEventListeners(this.evt);
         // Store new event name.
-        this.evt = begin;
-        // If `begin` is a number, start the animation right away.
-        if (!isNaN(begin)) {
+        this.evt = { begin: begin, end: end };
+        // Add new event listeners
+        this.addEventListeners(this.evt);
+        // If `begin` is not defined, start the animation right away.
+        if (begin === '') {
           this.stop();
           this.start();
         }
@@ -58962,11 +59014,14 @@ module.exports.AAnimation = registerElement('a-animation', {
       value: function (evts) {
         var el = this.el;
         var self = this;
-        utils.splitString(evts).forEach(function (evt) {
+        utils.splitString(evts.begin).forEach(function (evt) {
           el.addEventListener(evt, self.start);
         });
-        // If "begin" is an event name, wait. If it is a delay or not defined, start.
-        if (!isNaN(evts)) { el.addEventListener('play', this.start); }
+        utils.splitString(evts.end).forEach(function (evt) {
+          el.addEventListener(evt, self.stop);
+        });
+        // If "begin" is an event name, wait. If it is not defined, start.
+        if (evts.begin === '') { el.addEventListener('play', this.start); }
         el.addEventListener('pause', this.stop);
         el.addEventListener('stateadded', this.onStateAdded);
         el.addEventListener('stateremoved', this.onStateRemoved);
@@ -58977,8 +59032,12 @@ module.exports.AAnimation = registerElement('a-animation', {
       value: function (evts) {
         var el = this.el;
         var start = this.start;
-        utils.splitString(evts).forEach(function (evt) {
+        var stop = this.stop;
+        utils.splitString(evts.begin).forEach(function (evt) {
           el.removeEventListener(evt, start);
+        });
+        utils.splitString(evts.end).forEach(function (evt) {
+          el.removeEventListener(evt, stop);
         });
         el.removeEventListener('stateadded', this.onStateAdded);
         el.removeEventListener('stateremoved', this.onStateRemoved);
@@ -59101,7 +59160,7 @@ function getAnimationValues (el, attribute, dataFrom, dataTo, currentValue) {
     }
     schema = component.schema;
     if (dataFrom === undefined) {  // dataFrom can be 0.
-      from[attribute] = getComputedAttributeFor(el, attribute);
+      from[attribute] = getComponentProperty(el, attribute);
     } else {
       from[attribute] = dataFrom;
     }
@@ -59174,7 +59233,6 @@ function getAnimationValues (el, attribute, dataFrom, dataTo, currentValue) {
   }
 }
 module.exports.getAnimationValues = getAnimationValues;
-module.exports.getComputedAttributeFor = getComputedAttributeFor;
 
 /**
  * Converts string to bool.
@@ -59195,26 +59253,6 @@ function strToBool (str) {
  */
 function boolToNum (bool) {
   return bool ? 1 : 0;
-}
-
-/**
- * A getComputedAttribute that supports dot notation to look up a component property.
- *
- * @param {Element} el - To look up attribute on.
- * @param {string} attr - dot notation or singular 'color' or 'material.color'
- * @returns Resulting value of component property.
- */
-function getComputedAttributeFor (el, attribute) {
-  var attributeSplit = attribute.split('.');
-  var componentName = attributeSplit[0];
-  var componentPropName = attributeSplit[1];
-  var attributeValue = el.getComputedAttribute(componentName);
-  // If the attribute is singular call normal getComputedAttribute function
-  if (attributeSplit.length === 1) { return attributeValue; }
-  // If the component exists as an attribute return the property on it
-  if (attributeValue) { return attributeValue[componentPropName]; }
-  // Otherwise Fall back to native get attribute with the component prop name
-  return el.getComputedAttribute(componentPropName);
 }
 
 /**
@@ -59248,7 +59286,7 @@ function rgbVectorToHex (color) {
   }).join('');
 }
 
-},{"../constants/animation":43,"../lib/three":99,"../utils/":112,"./a-node":49,"./a-register-element":50,"./schema":58,"tween.js":17}],45:[function(_dereq_,module,exports){
+},{"../constants/animation":43,"../lib/three":95,"../utils/":109,"./a-node":49,"./a-register-element":50,"./schema":58,"tween.js":17}],45:[function(_dereq_,module,exports){
 var ANode = _dereq_('./a-node');
 var debug = _dereq_('../utils/debug');
 var registerElement = _dereq_('./a-register-element').registerElement;
@@ -59380,7 +59418,7 @@ function mediaElementLoaded (el) {
   });
 }
 
-},{"../lib/three":99,"../utils/debug":111,"./a-node":49,"./a-register-element":50}],46:[function(_dereq_,module,exports){
+},{"../lib/three":95,"../utils/debug":107,"./a-node":49,"./a-register-element":50}],46:[function(_dereq_,module,exports){
 /* global HTMLElement */
 var debug = _dereq_('../utils/debug');
 var registerElement = _dereq_('./a-register-element').registerElement;
@@ -59431,7 +59469,7 @@ module.exports = registerElement('a-cubemap', {
   })
 });
 
-},{"../utils/debug":111,"./a-register-element":50}],47:[function(_dereq_,module,exports){
+},{"../utils/debug":107,"./a-register-element":50}],47:[function(_dereq_,module,exports){
 /* global HTMLElement */
 var ANode = _dereq_('./a-node');
 var components = _dereq_('./component').components;
@@ -59443,6 +59481,8 @@ var AEntity;
 var isNode = re.isNode;
 var debug = utils.debug('core:a-entity:debug');
 var registerElement = re.registerElement;
+
+var MULTIPLE_COMPONENT_DELIMITER = '__';
 
 /**
  * Entity is a container object that components are plugged into to comprise everything in
@@ -59493,13 +59533,14 @@ var proto = Object.create(ANode.prototype, {
     }
   },
 
+  /**
+   * Add to parent, load, play.
+   */
   attachedCallback: {
     value: function () {
       this.addToParent();
-      if (!this.isScene) {
-        this.load();
-        if (this.parentEl.isPlaying) { this.play(); }
-      }
+      if (this.isScene) { return; }
+      this.load();
     }
   },
 
@@ -59578,11 +59619,17 @@ var proto = Object.create(ANode.prototype, {
 
   setObject3D: {
     value: function (type, obj) {
+      var self = this;
       var oldObj = this.object3DMap[type];
       if (oldObj) { this.object3D.remove(oldObj); }
       if (obj instanceof THREE.Object3D) {
-        obj.el = this;
+        obj.el = self;
         this.object3D.add(obj);
+        if (obj.children.length) {
+          obj.traverse(function bindEl (child) {
+            child.el = self;
+          });
+        }
       }
       this.object3DMap[type] = obj;
     }
@@ -59645,15 +59692,27 @@ var proto = Object.create(ANode.prototype, {
 
   load: {
     value: function () {
+      var self = this;
+
       if (this.hasLoaded) { return; }
+
       // Attach to parent object3D.
       this.addToParent();
+
+      // Scene load.
+      function sceneLoadCallback () { self.updateComponents(); }
       if (this.isScene) {
-        ANode.prototype.load.call(this, this.updateComponents.bind(this));
-      } else {
-        ANode.prototype.load.call(this, this.updateComponents.bind(this),
-                                  function (el) { return el.isEntity; });
+        ANode.prototype.load.call(this, sceneLoadCallback);
+        return;
       }
+
+      // Entity load.
+      function entityLoadCallback () {
+        self.updateComponents();
+        // self.parentNode should work but that is null during this cb for unknown (#1483).
+        if (self.parentEl.isPlaying) { self.play(); }
+      }
+      ANode.prototype.load.call(this, entityLoadCallback, isEntity);
     },
     writable: window.debug
   },
@@ -59686,38 +59745,48 @@ var proto = Object.create(ANode.prototype, {
   /**
    * Initialize component.
    *
-   * @param {string} name - Component name.
+   * @param {string} attrName - Attribute name asociated to the component.
    * @param {object} data - Component data
    * @param {boolean} isDependency - True if the component is a dependency.
    */
   initComponent: {
-    value: function (name, data, isDependency) {
+    value: function (attrName, data, isDependency) {
       var component;
-      var isComponentDefined = checkComponentDefined(this, name) || data !== undefined;
+      var componentInfo = attrName.split(MULTIPLE_COMPONENT_DELIMITER);
+      var componentId = componentInfo[1];
+      var componentName = componentInfo[0];
+      var isComponentDefined = checkComponentDefined(this, attrName) || data !== undefined;
 
       // Check if component is registered and whether component should be initialized.
-      if (!components[name] || (!isComponentDefined && !isDependency)) {
+      if (!components[componentName] ||
+          (!isComponentDefined && !isDependency) ||
+          // If component already initialized.
+          (attrName in this.components)) {
         return;
       }
 
-      // Initialize dependencies.
-      this.initComponentDependencies(name);
+      // Initialize dependencies first
+      this.initComponentDependencies(componentName);
 
-      // Check if component already initialized.
-      if (name in this.components) { return; }
-      component = this.components[name] = new components[name].Component(this, data);
-      if (this.isPlaying) { playComponent(component, this.sceneEl); }
+      // If component name has an id we check component type multiplic
+      if (componentId && !components[componentName].multiple) {
+        throw new Error('Trying to initialize multiple ' +
+                        'components of type `' + componentName +
+                        '`. There can only be one component of this type per entity.');
+      }
+      component = this.components[attrName] = new components[componentName].Component(this, data, componentId);
+      if (this.isPlaying) { component.play(); }
 
       // Components are reflected in the DOM as attributes but the state is not shown
       // hence we set the attribute to empty string.
       // The flag justInitialized is for attributeChangedCallback to not overwrite
       // the component with the empty string.
-      if (!this.hasAttribute(name)) {
+      if (!this.hasAttribute(attrName)) {
         component.justInitialized = true;
-        HTMLElement.prototype.setAttribute.call(this, name, '');
+        HTMLElement.prototype.setAttribute.call(this, attrName, '');
       }
 
-      debug('Component initialized: %s', name);
+      debug('Component initialized: %s', attrName);
     },
     writable: window.debug
   },
@@ -59743,7 +59812,7 @@ var proto = Object.create(ANode.prototype, {
       var isMixedIn = isComponentMixedIn(name, this.mixinEls);
       // Don't remove default or mixed in components
       if (isDefault || isMixedIn) { return; }
-      pauseComponent(component, this.sceneEl);
+      component.pause();
       component.remove();
       delete this.components[name];
       this.emit('componentremoved', { name: name });
@@ -59774,7 +59843,8 @@ var proto = Object.create(ANode.prototype, {
 
       // add component to the list
       function addComponent (key) {
-        if (!components[key]) { return; }
+        var name = key.split(MULTIPLE_COMPONENT_DELIMITER)[0];
+        if (!components[name]) { return; }
         elComponents[key] = true;
       }
       // updates a component with a given name
@@ -59809,8 +59879,9 @@ var proto = Object.create(ANode.prototype, {
         component.updateProperties(attrValue);
         return;
       }
+      if (attrValue === null) { return; }
       // Component not yet initialized. Initialize component.
-      this.initComponent(attr, attrValue);
+      this.initComponent(attr, attrValue, false);
     }
   },
 
@@ -59841,12 +59912,13 @@ var proto = Object.create(ANode.prototype, {
    */
   removeAttribute: {
     value: function (attr) {
-      var component = components[attr];
+      var component = this.components[attr];
       if (component) {
         this.setEntityAttribute(attr, undefined, null);
-      } else {
-        HTMLElement.prototype.removeAttribute.call(this, attr);
+        // The component might not be removed if it's a default one
+        if (this.components[attr]) { return; }
       }
+      HTMLElement.prototype.removeAttribute.call(this, attr);
     }
   },
 
@@ -59858,20 +59930,19 @@ var proto = Object.create(ANode.prototype, {
     value: function () {
       var components = this.components;
       var componentKeys = Object.keys(components);
-      var sceneEl = this.sceneEl;
 
       // Already playing.
       if (this.isPlaying || !this.hasLoaded) { return; }
       this.isPlaying = true;
 
       // Wake up all components.
-      componentKeys.forEach(function _playComponent (key) {
-        playComponent(components[key], sceneEl);
+      componentKeys.forEach(function playComponent (key) {
+        components[key].play();
       });
 
       // Tell all child entities to play.
-      this.getChildEntities().forEach(function play (obj) {
-        obj.play();
+      this.getChildEntities().forEach(function play (entity) {
+        entity.play();
       });
 
       this.emit('play');
@@ -59887,14 +59958,13 @@ var proto = Object.create(ANode.prototype, {
     value: function () {
       var components = this.components;
       var componentKeys = Object.keys(components);
-      var sceneEl = this.sceneEl;
 
       if (!this.isPlaying) { return; }
       this.isPlaying = false;
 
       // Sleep all components.
-      componentKeys.forEach(function _pauseComponent (key) {
-        pauseComponent(components[key], sceneEl);
+      componentKeys.forEach(function pauseComponent (key) {
+        components[key].pause();
       });
 
       // Tell all child entities to pause.
@@ -59916,7 +59986,7 @@ var proto = Object.create(ANode.prototype, {
    */
   setEntityAttribute: {
     value: function (attr, oldVal, newVal) {
-      if (components[attr]) {
+      if (components[attr] || this.components[attr]) {
         this.updateComponent(attr, newVal);
         return;
       }
@@ -59955,7 +60025,8 @@ var proto = Object.create(ANode.prototype, {
   setAttribute: {
     value: function (attr, value, componentPropValue) {
       var isDebugMode = this.sceneEl && this.sceneEl.getAttribute('debug');
-      if (components[attr]) {
+      var componentName = attr.split(MULTIPLE_COMPONENT_DELIMITER)[0];
+      if (components[componentName]) {
         // Just update one of the component properties
         if (typeof value === 'string' && componentPropValue !== undefined) {
           this.updateComponentProperty(attr, value, componentPropValue);
@@ -60109,30 +60180,8 @@ function isComponentMixedIn (name, mixinEls) {
   return inMixin;
 }
 
-/**
- * Pause component by removing tick behavior and calling pause handler.
- *
- * @param component {object} - Component to pause.
- * @param sceneEl {Element} - Scene, needed to remove the tick behavior.
- */
-function pauseComponent (component, sceneEl) {
-  component.pause();
-  // Remove tick behavior.
-  if (!component.tick) { return; }
-  sceneEl.removeBehavior(component);
-}
-
-/**
- * Play component by adding tick behavior and calling play handler.
- *
- * @param component {object} - Component to play.
- * @param sceneEl {Element} - Scene, needed to add the tick behavior.
- */
-function playComponent (component, sceneEl) {
-  component.play();
-  // Add tick behavior.
-  if (!component.tick) { return; }
-  sceneEl.addBehavior(component);
+function isEntity (el) {
+  return el.isEntity;
 }
 
 AEntity = registerElement('a-entity', {
@@ -60140,7 +60189,7 @@ AEntity = registerElement('a-entity', {
 });
 module.exports = AEntity;
 
-},{"../lib/three":99,"../utils/":112,"./a-node":49,"./a-register-element":50,"./component":51}],48:[function(_dereq_,module,exports){
+},{"../lib/three":95,"../utils/":109,"./a-node":49,"./a-register-element":50,"./component":51}],48:[function(_dereq_,module,exports){
 /* global HTMLElement */
 var ANode = _dereq_('./a-node');
 var registerElement = _dereq_('./a-register-element').registerElement;
@@ -60465,7 +60514,7 @@ module.exports = registerElement('a-node', {
   })
 });
 
-},{"../utils/":112,"./a-register-element":50}],50:[function(_dereq_,module,exports){
+},{"../utils/":109,"./a-register-element":50}],50:[function(_dereq_,module,exports){
 // Polyfill `document.registerElement`.
 _dereq_('document-register-element');
 
@@ -60635,7 +60684,7 @@ function copyProperties (source, destination) {
 var ANode = _dereq_('./a-node');
 var AEntity = _dereq_('./a-entity');
 
-},{"./a-entity":47,"./a-node":49,"document-register-element":5}],51:[function(_dereq_,module,exports){
+},{"./a-entity":47,"./a-node":49,"document-register-element":8}],51:[function(_dereq_,module,exports){
 /* global HTMLElement */
 var schema = _dereq_('./schema');
 var systems = _dereq_('./system');
@@ -60663,8 +60712,10 @@ var styleParser = utils.styleParser;
  * @member {object} el - Reference to the entity element.
  * @member {string} name - Component name exposed as an HTML attribute.
  */
-var Component = module.exports.Component = function (el, attr) {
+var Component = module.exports.Component = function (el, attr, id) {
   this.el = el;
+  this.id = id;
+  this.attrName = this.name + (id ? '__' + id : '');
   this.updateCachedAttrValue(attr);
   if (!el.hasLoaded) { return; }
   this.updateProperties();
@@ -60816,7 +60867,7 @@ Component.prototype = {
   flushToDOM: function () {
     var attrValue = this.attrValue;
     if (!attrValue) { return; }
-    HTMLElement.prototype.setAttribute.call(this.el, this.name, this.stringify(attrValue));
+    HTMLElement.prototype.setAttribute.call(this.el, this.attrName, this.stringify(attrValue));
   },
 
   /**
@@ -60841,10 +60892,15 @@ Component.prototype = {
     if (!this.initialized) {
       this.init();
       this.initialized = true;
+      // Play the component if the entity is playing.
+      this.update(oldData);
+      if (el.isPlaying) { this.play(); }
+    } else {
+      this.update(oldData);
     }
-    this.update(oldData);
 
     el.emit('componentchanged', {
+      id: this.id,
       name: this.name,
       newData: this.getData(),
       oldData: oldData
@@ -60881,6 +60937,12 @@ module.exports.registerComponent = function (name, definition) {
   var NewComponent;
   var proto = {};
 
+  if (name.indexOf('__') !== -1) {
+    throw new Error('The component name `' + name + '` is not allowed. ' +
+                    'The sequence __ (double underscore) is reserved to specify an id' +
+                    ' for multiple components of the same type');
+  }
+
   // Format definition object to prototype object.
   Object.keys(definition).forEach(function (key) {
     proto[key] = {
@@ -60894,17 +60956,21 @@ module.exports.registerComponent = function (name, definition) {
                     'Check that you are not loading two versions of the same component ' +
                     'or two different components of the same name.');
   }
-  NewComponent = function (el, attr) {
-    Component.call(this, el, attr);
+  NewComponent = function (el, attr, id) {
+    Component.call(this, el, attr, id);
   };
+
   NewComponent.prototype = Object.create(Component.prototype, proto);
   NewComponent.prototype.name = name;
   NewComponent.prototype.constructor = NewComponent;
   NewComponent.prototype.system = systems && systems.systems[name];
+  NewComponent.prototype.play = wrapPlay(NewComponent.prototype.play);
+  NewComponent.prototype.pause = wrapPause(NewComponent.prototype.pause);
 
   components[name] = {
     Component: NewComponent,
     dependencies: NewComponent.prototype.dependencies,
+    multiple: NewComponent.prototype.multiple,
     parse: NewComponent.prototype.parse,
     parseAttrValueForCache: NewComponent.prototype.parseAttrValueForCache,
     schema: utils.extend(processSchema(NewComponent.prototype.schema)),
@@ -60985,7 +61051,45 @@ function extendProperties (dest, source, isSinglePropSchema) {
   return utils.extend(dest, source);
 }
 
-},{"../utils/":112,"./schema":58,"./system":60}],52:[function(_dereq_,module,exports){
+/**
+ * Wrapper for user defined pause method
+ * Pause component by removing tick behavior and calling user's pause method.
+ *
+ * @param pauseMethod {function} - user defined pause method
+ */
+function wrapPause (pauseMethod) {
+  return function pause () {
+    var sceneEl = this.el.sceneEl;
+    if (!this.isPlaying) { return; }
+    pauseMethod.call(this);
+    this.isPlaying = false;
+    // Remove tick behavior.
+    if (!this.tick) { return; }
+    sceneEl.removeBehavior(this);
+  };
+}
+
+/**
+ * Wrapper for user defined play method
+ * Play component by adding tick behavior and calling user's play method.
+ *
+ * @param playMethod {function} - user defined play method
+ *
+ */
+function wrapPlay (playMethod) {
+  return function play () {
+    var sceneEl = this.el.sceneEl;
+    var shouldPlay = this.el.isPlaying && !this.isPlaying;
+    if (!this.initialized || !shouldPlay) { return; }
+    playMethod.call(this);
+    this.isPlaying = true;
+    // Add tick behavior.
+    if (!this.tick) { return; }
+    sceneEl.addBehavior(this);
+  };
+}
+
+},{"../utils/":109,"./schema":58,"./system":60}],52:[function(_dereq_,module,exports){
 var schema = _dereq_('./schema');
 
 var processSchema = schema.process;
@@ -61059,7 +61163,7 @@ module.exports.registerGeometry = function (name, definition) {
   return NewGeometry;
 };
 
-},{"../lib/three":99,"./schema":58}],53:[function(_dereq_,module,exports){
+},{"../lib/three":95,"./schema":58}],53:[function(_dereq_,module,exports){
 var coordinates = _dereq_('../utils/coordinates');
 var debug = _dereq_('debug');
 
@@ -61190,7 +61294,7 @@ function vecParse (value) {
   return coordinates.parse(value, this.default);
 }
 
-},{"../utils/coordinates":110,"debug":2}],54:[function(_dereq_,module,exports){
+},{"../utils/coordinates":106,"debug":3}],54:[function(_dereq_,module,exports){
 /* global Promise */
 var initMetaTags = _dereq_('./metaTags').inject;
 var initWakelock = _dereq_('./wakelock');
@@ -61270,7 +61374,6 @@ module.exports = registerElement('a-scene', {
         initWakelock(this);
 
         window.addEventListener('load', resize);
-        window.addEventListener('beforeunload', this.exitVR.bind(this));
         window.addEventListener('resize', resize);
         this.play();
       },
@@ -61331,8 +61434,12 @@ module.exports = registerElement('a-scene', {
             window.screen.orientation.lock('landscape');
           }
         }
-        function enterVRFailure () {
-          throw new Error('enter VR mode error. requestPresent failed');
+        function enterVRFailure (err) {
+          if (err && err.message) {
+            throw new Error('Failed to enter VR mode (`requestPresent`): ' + err.message);
+          } else {
+            throw new Error('Failed to enter VR mode (`requestPresent`).');
+          }
         }
       }
     },
@@ -61340,6 +61447,7 @@ module.exports = registerElement('a-scene', {
     exitVR: {
       value: function () {
         var self = this;
+        if (!this.is('vr-mode')) { return; }
         return this.effect.exitPresent().then(exitVRSuccess, exitVRFailure);
         function exitVRSuccess () {
           self.removeState('vr-mode');
@@ -61350,8 +61458,12 @@ module.exports = registerElement('a-scene', {
           self.resize();
           self.emit('exit-vr', {target: self});
         }
-        function exitVRFailure () {
-          throw new Error('exit VR mode error. exitPresent failed');
+        function exitVRFailure (err) {
+          if (err && err.message) {
+            throw new Error('Failed to exit VR mode (`exitPresent`): ' + err.message);
+          } else {
+            throw new Error('Failed to exit VR mode (`exitPresent`).');
+          }
         }
       }
     },
@@ -61435,7 +61547,7 @@ module.exports = registerElement('a-scene', {
             if (window.performance) {
               window.performance.mark('render-started');
             }
-            this.render();
+            this.render(0);
             this.renderStarted = true;
             this.emit('renderstart');
           }
@@ -61529,7 +61641,7 @@ function getCanvasSize (canvas) {
   };
 }
 
-},{"../../lib/three":99,"../../utils/":112,"../a-entity":47,"../a-node":49,"../a-register-element":50,"../system":60,"./metaTags":55,"./postMessage":56,"./wakelock":57,"tween.js":17}],55:[function(_dereq_,module,exports){
+},{"../../lib/three":95,"../../utils/":109,"../a-entity":47,"../a-node":49,"../a-register-element":50,"../system":60,"./metaTags":55,"./postMessage":56,"./wakelock":57,"tween.js":17}],55:[function(_dereq_,module,exports){
 var extend = _dereq_('../../utils').extend;
 
 var MOBILE_HEAD_TAGS = module.exports.MOBILE_HEAD_TAGS = [
@@ -61537,8 +61649,7 @@ var MOBILE_HEAD_TAGS = module.exports.MOBILE_HEAD_TAGS = [
 
   // W3C-standardised meta tags.
   Meta({name: 'mobile-web-app-capable', content: 'yes'}),
-  Meta({name: 'theme-color', content: 'black'}),
-  Link({rel: 'icon', sizes: '192x192', href: 'https://aframe.io/images/aframe-logo-192.png'})
+  Meta({name: 'theme-color', content: 'black'})
 ];
 
 var MOBILE_IOS_HEAD_TAGS = [
@@ -61609,7 +61720,7 @@ function createTag (tagObj) {
   return extend(meta, tagObj.attributes);
 }
 
-},{"../../utils":112}],56:[function(_dereq_,module,exports){
+},{"../../utils":109}],56:[function(_dereq_,module,exports){
 var isIframed = _dereq_('../../utils/').isIframed;
 
 /**
@@ -61641,7 +61752,7 @@ function postMessageAPIHandler (event) {
   }
 }
 
-},{"../../utils/":112}],57:[function(_dereq_,module,exports){
+},{"../../utils/":109}],57:[function(_dereq_,module,exports){
 var Wakelock = _dereq_('../../../vendor/wakelock/wakelock');
 
 module.exports = function initWakelock (scene) {
@@ -61652,7 +61763,7 @@ module.exports = function initWakelock (scene) {
   scene.addEventListener('exit-vr', function () { wakelock.release(); });
 };
 
-},{"../../../vendor/wakelock/wakelock":122}],58:[function(_dereq_,module,exports){
+},{"../../../vendor/wakelock/wakelock":118}],58:[function(_dereq_,module,exports){
 var debug = _dereq_('../utils/debug');
 var propertyTypes = _dereq_('./propertyTypes').propertyTypes;
 var warn = debug('core:schema:warn');
@@ -61809,7 +61920,7 @@ function stringifyProperty (value, propDefinition) {
 }
 module.exports.stringifyProperty = stringifyProperty;
 
-},{"../utils/debug":111,"./propertyTypes":53}],59:[function(_dereq_,module,exports){
+},{"../utils/debug":107,"./propertyTypes":53}],59:[function(_dereq_,module,exports){
 var schema = _dereq_('./schema');
 
 var processSchema = schema.process;
@@ -61872,9 +61983,9 @@ Shader.prototype = {
     var self = this;
     var variables = {};
     var schema = this.schema;
-    var squemaKeys = Object.keys(schema);
-    squemaKeys.forEach(processSquema);
-    function processSquema (key) {
+    var schemaKeys = Object.keys(schema);
+    schemaKeys.forEach(processSchema);
+    function processSchema (key) {
       if (schema[key].is !== type) { return; }
       var varType = propertyToThreeMapping[schema[key].type];
       var varValue = schema[key].parse(data[key] || schema[key].default);
@@ -61968,7 +62079,7 @@ module.exports.registerShader = function (name, definition) {
   return NewShader;
 };
 
-},{"../lib/three":99,"./schema":58}],60:[function(_dereq_,module,exports){
+},{"../lib/three":95,"./schema":58}],60:[function(_dereq_,module,exports){
 var components = _dereq_('./component');
 var systems = module.exports.systems = {};  // Keep track of registered components.
 
@@ -62104,9 +62215,12 @@ registerComponent('pivot', {
   }
 });
 
-},{"../../core/component":51,"../../lib/three":99}],63:[function(_dereq_,module,exports){
+},{"../../core/component":51,"../../lib/three":95}],63:[function(_dereq_,module,exports){
 var ANode = _dereq_('../../core/a-node');
 var registerElement = _dereq_('../../core/a-register-element').registerElement;
+var utils = _dereq_('../../utils/');
+
+var setComponentProperty = utils.entity.setComponentProperty;
 
 /**
  * Declarative events to help register event listeners that set attributes on other entities.
@@ -62181,7 +62295,6 @@ module.exports = registerElement('a-event', {
         return el.addEventListener(name, function () {
           var attribute;
           var attributeName;
-          var attributeSplit;
           var attributeValue;
           var targetEl;
 
@@ -62194,17 +62307,7 @@ module.exports = registerElement('a-event', {
 
               // target is a keyword for <a-event>.
               if (attributeName === 'target') { continue; }
-
-              // Handle component property selector like `material.color`.
-              if (attributeName.indexOf('.') !== -1) {
-                attributeSplit = attributeName.split('.');
-                targetEl.setAttribute(attributeSplit[0], attributeSplit[1],
-                                      attributeValue);
-                continue;
-              }
-
-              // Set plain attribute.
-              targetEl.setAttribute(attributeName, attributeValue);
+              setComponentProperty(targetEl, attributeName, attributeValue);
             }
           }
         });
@@ -62213,13 +62316,13 @@ module.exports = registerElement('a-event', {
   })
 });
 
-},{"../../core/a-node":49,"../../core/a-register-element":50}],64:[function(_dereq_,module,exports){
+},{"../../core/a-node":49,"../../core/a-register-element":50,"../../utils/":109}],64:[function(_dereq_,module,exports){
 /**
  * Common mesh defaults, mappings, and transforms.
  */
 module.exports = function getMeshMixin () {
   return {
-    defaultAttributes: {
+    defaultComponents: {
       material: { }
     },
 
@@ -62247,53 +62350,24 @@ module.exports = function getMeshMixin () {
 };
 
 },{}],65:[function(_dereq_,module,exports){
-_dereq_('./primitives/a-box');
 _dereq_('./primitives/a-camera');
-_dereq_('./primitives/a-circle');
 _dereq_('./primitives/a-collada-model');
-_dereq_('./primitives/a-cone');
 _dereq_('./primitives/a-cursor');
 _dereq_('./primitives/a-curvedimage');
-_dereq_('./primitives/a-cylinder');
 _dereq_('./primitives/a-image');
 _dereq_('./primitives/a-light');
-_dereq_('./primitives/a-model');
 _dereq_('./primitives/a-obj-model');
-_dereq_('./primitives/a-plane');
-_dereq_('./primitives/a-ring');
 _dereq_('./primitives/a-sky');
-_dereq_('./primitives/a-sphere');
-_dereq_('./primitives/a-torus');
+_dereq_('./primitives/a-sound');
 _dereq_('./primitives/a-video');
 _dereq_('./primitives/a-videosphere');
+_dereq_('./primitives/meshPrimitives');
 
-},{"./primitives/a-box":66,"./primitives/a-camera":67,"./primitives/a-circle":68,"./primitives/a-collada-model":69,"./primitives/a-cone":70,"./primitives/a-cursor":71,"./primitives/a-curvedimage":72,"./primitives/a-cylinder":73,"./primitives/a-image":74,"./primitives/a-light":75,"./primitives/a-model":76,"./primitives/a-obj-model":77,"./primitives/a-plane":78,"./primitives/a-ring":79,"./primitives/a-sky":80,"./primitives/a-sphere":81,"./primitives/a-torus":82,"./primitives/a-video":83,"./primitives/a-videosphere":84}],66:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-var boxDefinition = utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'box'
-    }
-  },
-
-  mappings: {
-    depth: 'geometry.depth',
-    height: 'geometry.height',
-    translate: 'geometry.translate',
-    width: 'geometry.width'
-  }
-});
-
-registerPrimitive('a-box', boxDefinition);
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],67:[function(_dereq_,module,exports){
+},{"./primitives/a-camera":66,"./primitives/a-collada-model":67,"./primitives/a-cursor":68,"./primitives/a-curvedimage":69,"./primitives/a-image":70,"./primitives/a-light":71,"./primitives/a-obj-model":72,"./primitives/a-sky":73,"./primitives/a-sound":74,"./primitives/a-video":75,"./primitives/a-videosphere":76,"./primitives/meshPrimitives":77}],66:[function(_dereq_,module,exports){
 var registerPrimitive = _dereq_('../registerPrimitive');
 
 registerPrimitive('a-camera', {
-  defaultAttributes: {
+  defaultComponents: {
     camera: {},
     'look-controls': {},
     'wasd-controls': {}
@@ -62305,7 +62379,8 @@ registerPrimitive('a-camera', {
     fov: 'camera.fov',
     'look-controls-enabled': 'look-controls.enabled',
     near: 'camera.near',
-    'wasd-controls-enabled': 'wasd-controls.enabled'
+    'wasd-controls-enabled': 'wasd-controls.enabled',
+    zoom: 'camera.zoom'
   },
 
   deprecatedMappings: {
@@ -62318,27 +62393,7 @@ registerPrimitive('a-camera', {
   }
 });
 
-},{"../registerPrimitive":85}],68:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-circle', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'circle'
-    }
-  },
-
-  mappings: {
-    'radius': 'geometry.radius',
-    'segments': 'geometry.segments',
-    'theta-length': 'geometry.theta-length',
-    'theta-start': 'geometry.theta-start'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],69:[function(_dereq_,module,exports){
+},{"../registerPrimitive":78}],67:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
@@ -62349,38 +62404,13 @@ registerPrimitive('a-collada-model', utils.extendDeep({}, getMeshMixin(), {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],70:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-cone', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'cone'
-    }
-  },
-
-  mappings: {
-    height: 'geometry.height',
-    'open-ended': 'geometry.openEnded',
-    'radius-bottom': 'geometry.radiusBottom',
-    'radius-top': 'geometry.radiusTop',
-    'segments-height': 'geometry.segmentsHeight',
-    'segments-radial': 'geometry.segmentsRadial',
-    'theta-length': 'geometry.thetaLength',
-    'theta-start': 'geometry.thetaStart',
-    translate: 'geometry.translate'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],71:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],68:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-cursor', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     cursor: {},
     geometry: {
       primitive: 'ring',
@@ -62410,13 +62440,13 @@ registerPrimitive('a-cursor', utils.extendDeep({}, getMeshMixin(), {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],72:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],69:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-curvedimage', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     geometry: {
       height: 1,
       primitive: 'cylinder',
@@ -62448,38 +62478,13 @@ registerPrimitive('a-curvedimage', utils.extendDeep({}, getMeshMixin(), {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],73:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-cylinder', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'cylinder'
-    }
-  },
-
-  mappings: {
-    height: 'geometry.height',
-    'open-ended': 'geometry.openEnded',
-    radius: 'geometry.radius',
-    'radius-bottom': 'geometry.radiusBottom',
-    'radius-top': 'geometry.radiusTop',
-    'segments-radial': 'geometry.segmentsRadial',
-    'theta-length': 'geometry.thetaLength',
-    'theta-start': 'geometry.thetaStart',
-    translate: 'geometry.translate'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],74:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],70:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-image', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     geometry: {
       primitive: 'plane'
     },
@@ -62493,16 +62498,15 @@ registerPrimitive('a-image', utils.extendDeep({}, getMeshMixin(), {
 
   mappings: {
     height: 'geometry.height',
-    translate: 'geometry.translate',
     width: 'geometry.width'
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],75:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],71:[function(_dereq_,module,exports){
 var registerPrimitive = _dereq_('../registerPrimitive');
 
 registerPrimitive('a-light', {
-  defaultAttributes: {
+  defaultComponents: {
     light: {}
   },
 
@@ -62518,30 +62522,7 @@ registerPrimitive('a-light', {
   }
 });
 
-},{"../registerPrimitive":85}],76:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-model', utils.extend({}, getMeshMixin(), {
-  deprecated: '<a-model> is deprecated. Use <a-obj-model> or <a-collada-model> instead.',
-
-  defaultAttributes: {
-    loader: {
-      format: 'collada'
-    },
-    material: {
-      color: '#FFF'
-    }
-  },
-
-  mappings: {
-    src: 'loader.src',
-    format: 'loader.format'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],77:[function(_dereq_,module,exports){
+},{"../registerPrimitive":78}],72:[function(_dereq_,module,exports){
 var meshMixin = _dereq_('../getMeshMixin')();
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
@@ -62557,57 +62538,16 @@ registerPrimitive('a-obj-model', utils.extendDeep({}, meshMixin, {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],78:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-plane', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'plane'
-    }
-  },
-
-  mappings: {
-    height: 'geometry.height',
-    translate: 'geometry.translate',
-    width: 'geometry.width'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],79:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-ring', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'ring'
-    }
-  },
-
-  mappings: {
-    'radius-inner': 'geometry.radiusInner',
-    'radius-outer': 'geometry.radiusOuter',
-    'segments-phi': 'geometry.segments-phi',
-    'segments-theta': 'geometry.segments-theta',
-    'theta-length': 'geometry.theta-length',
-    'theta-start': 'geometry.theta-start'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],80:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],73:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-sky', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     geometry: {
       primitive: 'sphere',
-      radius: 100,
+      radius: 5000,
       segmentsWidth: 64,
       segmentsHeight: 20
     },
@@ -62625,54 +62565,30 @@ registerPrimitive('a-sky', utils.extendDeep({}, getMeshMixin(), {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],81:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],74:[function(_dereq_,module,exports){
 var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
 
-registerPrimitive('a-sphere', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'sphere'
-    }
+registerPrimitive('a-sound', {
+  defaultComponents: {
+    sound: {}
   },
 
   mappings: {
-    radius: 'geometry.radius',
-    'segments-height': 'geometry.segmentsHeight',
-    'segments-width': 'geometry.segmentsWidth',
-    translate: 'geometry.translate'
+    src: 'sound.src',
+    on: 'sound.on',
+    autoplay: 'sound.autoplay',
+    loop: 'sound.loop',
+    volume: 'sound.volume'
   }
-}));
+});
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],82:[function(_dereq_,module,exports){
-var getMeshMixin = _dereq_('../getMeshMixin');
-var registerPrimitive = _dereq_('../registerPrimitive');
-var utils = _dereq_('../../../utils/');
-
-registerPrimitive('a-torus', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
-    geometry: {
-      primitive: 'torus'
-    }
-  },
-
-  mappings: {
-    'arc': 'geometry.arc',
-    'radius': 'geometry.radius',
-    'radius-tubular': 'geometry.radiusTubular',
-    'segments-radial': 'geometry.segmentsRadial',
-    'segments-tubular': 'geometry.segmentsTubular'
-  }
-}));
-
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],83:[function(_dereq_,module,exports){
+},{"../registerPrimitive":78}],75:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-video', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     geometry: {
       primitive: 'plane'
     },
@@ -62686,23 +62602,22 @@ registerPrimitive('a-video', utils.extendDeep({}, getMeshMixin(), {
 
   mappings: {
     height: 'geometry.height',
-    translate: 'geometry.translate',
     width: 'geometry.width'
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],84:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],76:[function(_dereq_,module,exports){
 var getMeshMixin = _dereq_('../getMeshMixin');
 var registerPrimitive = _dereq_('../registerPrimitive');
 var utils = _dereq_('../../../utils/');
 
 registerPrimitive('a-videosphere', utils.extendDeep({}, getMeshMixin(), {
-  defaultAttributes: {
+  defaultComponents: {
     geometry: {
       primitive: 'sphere',
       radius: 5000,
       segmentsWidth: 64,
-      segmentsHeight: 64
+      segmentsHeight: 20
     },
     material: {
       color: '#FFF',
@@ -62718,23 +62633,69 @@ registerPrimitive('a-videosphere', utils.extendDeep({}, getMeshMixin(), {
   }
 }));
 
-},{"../../../utils/":112,"../getMeshMixin":64,"../registerPrimitive":85}],85:[function(_dereq_,module,exports){
+},{"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],77:[function(_dereq_,module,exports){
+/**
+ * Automated mesh primitive registration.
+ */
+var getMeshMixin = _dereq_('../getMeshMixin');
+var geometries = _dereq_('../../../core/geometry').geometries;
+var geometryNames = _dereq_('../../../core/geometry').geometryNames;
+var registerPrimitive = _dereq_('../registerPrimitive');
+var utils = _dereq_('../../../utils/');
+
+// For testing.
+var meshPrimitives = module.exports = {};
+
+// Generate primitive for each geometry type.
+geometryNames.forEach(function registerMeshPrimitive (geometryName) {
+  var geometry = geometries[geometryName];
+  var geometryHyphened = unCamelCase(geometryName);
+
+  // Generate mappings.
+  var mappings = {};
+  Object.keys(geometry.schema).forEach(function createMapping (property) {
+    mappings[unCamelCase(property)] = 'geometry.' + property;
+  });
+
+  // Register.
+  var tagName = 'a-' + geometryHyphened;
+  var primitive = registerPrimitive(tagName, utils.extendDeep({}, getMeshMixin(), {
+    defaultComponents: {geometry: {primitive: geometryName}},
+    mappings: mappings
+  }));
+  meshPrimitives[tagName] = primitive;
+});
+
+/**
+ * camelCase to hyphened-string.
+ */
+function unCamelCase (str) {
+  return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+},{"../../../core/geometry":52,"../../../utils/":109,"../getMeshMixin":64,"../registerPrimitive":78}],78:[function(_dereq_,module,exports){
 var AEntity = _dereq_('../../core/a-entity');
 var components = _dereq_('../../core/component').components;
 var registerElement = _dereq_('../../core/a-register-element').registerElement;
 var utils = _dereq_('../../utils/');
 
 var debug = utils.debug;
+var setComponentProperty = utils.entity.setComponentProperty;
 var log = debug('extras:primitives:debug');
 
 module.exports = function registerPrimitive (name, definition) {
   name = name.toLowerCase();
   log('Registering <%s>', name);
 
+  // Deprecation warning for defaultAttributes usage.
+  if (definition.defaultAttributes) {
+    console.warn("The 'defaultAttributes' object is deprecated. Use 'defaultComponents' instead.");
+  }
+
   return registerElement(name, {
     prototype: Object.create(AEntity.prototype, {
-      defaultAttributes: {
-        value: definition.defaultAttributes || {}
+      defaultComponentsFromPrimitive: {
+        value: definition.defaultComponents || definition.defaultAttributes || {}
       },
 
       deprecated: {
@@ -62787,17 +62748,20 @@ module.exports = function registerPrimitive (name, definition) {
       applyDefaultComponents: {
         value: function () {
           var self = this;
-          var defaultData = this.defaultAttributes;
+          var defaultData = this.defaultComponentsFromPrimitive;
+
           // Apply default components.
           Object.keys(defaultData).forEach(function applyDefault (componentName) {
             var componentData = defaultData[componentName];
+
             // Set component properties individually to not overwrite user-defined components.
-            if (componentData instanceof Object && Object.keys(componentData).length) {
+            if (componentData instanceof Object) {
               var component = components[componentName];
               var attrValues = self.getAttribute(componentName) || {};
               var data = component.parse(attrValues);
+
+              // Check if component property already defined.
               Object.keys(componentData).forEach(function setProperty (propName) {
-                // Check if component property already defined.
                 if (data[propName]) { return; }
                 data[propName] = componentData[propName];
               });
@@ -62817,37 +62781,18 @@ module.exports = function registerPrimitive (name, definition) {
        */
       syncAttributeToComponent: {
         value: function (attr, value) {
-          var componentName;
-          var split;
-          var propertyName;
+          var componentName = this.mappings[attr];
 
           if (attr in this.deprecatedMappings) {
             console.warn(this.deprecatedMappings[attr]);
           }
-
-          if (!attr || !this.mappings[attr]) { return; }
-
-          // Differentiate between single-property and multi-property component.
-          componentName = this.mappings[attr];
-          if (componentName.indexOf('.') !== -1) {
-            split = this.mappings[attr].split('.');
-            componentName = split[0];
-            propertyName = split[1];
-          }
-
-          if (!components[componentName]) { return; }
+          if (!attr || !componentName) { return; }
 
           // Run transform.
           value = this.getTransformedValue(attr, value);
 
-          // If multi-property schema, set as update to component to not overwrite.
-          if (propertyName) {
-            this.setAttribute(componentName, propertyName, value);
-            return;
-          }
-
-          // Single-property schema, just set the value.
-          this.setAttribute(componentName, value);
+          // Set value.
+          setComponentProperty(this, componentName, value);
         }
       },
 
@@ -62864,7 +62809,7 @@ module.exports = function registerPrimitive (name, definition) {
   });
 };
 
-},{"../../core/a-entity":47,"../../core/a-register-element":50,"../../core/component":51,"../../utils/":112}],86:[function(_dereq_,module,exports){
+},{"../../core/a-entity":47,"../../core/a-register-element":50,"../../core/component":51,"../../utils/":109}],79:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -62872,7 +62817,10 @@ registerGeometry('box', {
   schema: {
     depth: {default: 1, min: 0},
     height: {default: 1, min: 0},
-    width: {default: 1, min: 0}
+    width: {default: 1, min: 0},
+    segmentsHeight: {default: 1, min: 1, max: 20, type: 'int'},
+    segmentsWidth: {default: 1, min: 1, max: 20, type: 'int'},
+    segmentsDepth: {default: 1, min: 1, max: 20, type: 'int'}
   },
 
   init: function (data) {
@@ -62880,7 +62828,7 @@ registerGeometry('box', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],87:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],80:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -62889,7 +62837,7 @@ var degToRad = THREE.Math.degToRad;
 registerGeometry('circle', {
   schema: {
     radius: {default: 1, min: 0},
-    segments: {default: 32, min: 0, type: 'int'},
+    segments: {default: 32, min: 3, type: 'int'},
     thetaLength: {default: 360, min: 0},
     thetaStart: {default: 0}
   },
@@ -62900,7 +62848,7 @@ registerGeometry('circle', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],88:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],81:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -62912,8 +62860,8 @@ registerGeometry('cone', {
     openEnded: {default: false},
     radiusBottom: {default: 1, min: 0},
     radiusTop: {default: 0.8, min: 0},
-    segmentsHeight: {default: 18, min: 0, type: 'int'},
-    segmentsRadial: {default: 36, min: 0, type: 'int'},
+    segmentsHeight: {default: 18, min: 1, type: 'int'},
+    segmentsRadial: {default: 36, min: 3, type: 'int'},
     thetaLength: {default: 360, min: 0},
     thetaStart: {default: 0}
   },
@@ -62926,7 +62874,7 @@ registerGeometry('cone', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],89:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],82:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -62937,8 +62885,8 @@ registerGeometry('cylinder', {
     height: {default: 1, min: 0},
     openEnded: {default: false},
     radius: {default: 1, min: 0},
-    segmentsHeight: {default: 18, min: 0, type: 'int'},
-    segmentsRadial: {default: 36, min: 0, type: 'int'},
+    segmentsHeight: {default: 18, min: 1, type: 'int'},
+    segmentsRadial: {default: 36, min: 3, type: 'int'},
     thetaLength: {default: 360, min: 0},
     thetaStart: {default: 0}
   },
@@ -62950,13 +62898,28 @@ registerGeometry('cylinder', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],90:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],83:[function(_dereq_,module,exports){
+var registerGeometry = _dereq_('../core/geometry').registerGeometry;
+var THREE = _dereq_('../lib/three');
+
+registerGeometry('dodecahedron', {
+  schema: {
+    detail: {default: 0, min: 0, max: 5, type: 'int'},
+    radius: {default: 1, min: 0}
+  },
+
+  init: function (data) {
+    this.geometry = new THREE.DodecahedronGeometry(data.radius, data.detail);
+  }
+});
+
+},{"../core/geometry":52,"../lib/three":95}],84:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
 registerGeometry('icosahedron', {
   schema: {
-    detail: {default: 0, min: 0, max: 1},
+    detail: {default: 0, min: 0, max: 5, type: 'int'},
     radius: {default: 1, min: 0}
   },
 
@@ -62965,26 +62928,46 @@ registerGeometry('icosahedron', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],91:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],85:[function(_dereq_,module,exports){
 _dereq_('./box.js');
 _dereq_('./circle.js');
 _dereq_('./cone.js');
 _dereq_('./cylinder.js');
+_dereq_('./dodecahedron.js');
 _dereq_('./icosahedron.js');
+_dereq_('./octahedron.js');
 _dereq_('./plane.js');
 _dereq_('./ring.js');
 _dereq_('./sphere.js');
+_dereq_('./tetrahedron.js');
 _dereq_('./torus.js');
 _dereq_('./torusKnot.js');
 
-},{"./box.js":86,"./circle.js":87,"./cone.js":88,"./cylinder.js":89,"./icosahedron.js":90,"./plane.js":92,"./ring.js":93,"./sphere.js":94,"./torus.js":95,"./torusKnot.js":96}],92:[function(_dereq_,module,exports){
+},{"./box.js":79,"./circle.js":80,"./cone.js":81,"./cylinder.js":82,"./dodecahedron.js":83,"./icosahedron.js":84,"./octahedron.js":86,"./plane.js":87,"./ring.js":88,"./sphere.js":89,"./tetrahedron.js":90,"./torus.js":91,"./torusKnot.js":92}],86:[function(_dereq_,module,exports){
+var registerGeometry = _dereq_('../core/geometry').registerGeometry;
+var THREE = _dereq_('../lib/three');
+
+registerGeometry('octahedron', {
+  schema: {
+    detail: {default: 0, min: 0, max: 5, type: 'int'},
+    radius: {default: 1, min: 0}
+  },
+
+  init: function (data) {
+    this.geometry = new THREE.OctahedronGeometry(data.radius, data.detail);
+  }
+});
+
+},{"../core/geometry":52,"../lib/three":95}],87:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
 registerGeometry('plane', {
   schema: {
     height: {default: 1, min: 0},
-    width: {default: 1, min: 0}
+    width: {default: 1, min: 0},
+    segmentsHeight: {default: 1, min: 1, max: 20, type: 'int'},
+    segmentsWidth: {default: 1, min: 1, max: 20, type: 'int'}
   },
 
   init: function (data) {
@@ -62992,7 +62975,7 @@ registerGeometry('plane', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],93:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],88:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -63002,8 +62985,8 @@ registerGeometry('ring', {
   schema: {
     radiusInner: {default: 0.8, min: 0},
     radiusOuter: {default: 1.2, min: 0},
-    segmentsPhi: { default: 8, min: 0, type: 'int' },
-    segmentsTheta: {default: 32, min: 0, type: 'int'},
+    segmentsPhi: { default: 10, min: 1, type: 'int' },
+    segmentsTheta: {default: 32, min: 3, type: 'int'},
     thetaLength: {default: 360, min: 0},
     thetaStart: {default: 0}
   },
@@ -63015,7 +62998,7 @@ registerGeometry('ring', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],94:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],89:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -63024,13 +63007,12 @@ var degToRad = THREE.Math.degToRad;
 registerGeometry('sphere', {
   schema: {
     radius: {default: 1, min: 0},
-    segments: {default: 32, min: 0, type: 'int'},
     phiLength: {default: 360},
     phiStart: {default: 0, min: 0},
     thetaLength: {default: 180, min: 0},
     thetaStart: {default: 0},
-    segmentsHeight: {default: 18, min: 0, type: 'int'},
-    segmentsWidth: {default: 36, min: 0, type: 'int'}
+    segmentsHeight: {default: 18, min: 2, type: 'int'},
+    segmentsWidth: {default: 36, min: 3, type: 'int'}
   },
 
   init: function (data) {
@@ -63040,7 +63022,22 @@ registerGeometry('sphere', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],95:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],90:[function(_dereq_,module,exports){
+var registerGeometry = _dereq_('../core/geometry').registerGeometry;
+var THREE = _dereq_('../lib/three');
+
+registerGeometry('tetrahedron', {
+  schema: {
+    detail: {default: 0, min: 0, max: 5, type: 'int'},
+    radius: {default: 1, min: 0}
+  },
+
+  init: function (data) {
+    this.geometry = new THREE.TetrahedronGeometry(data.radius, data.detail);
+  }
+});
+
+},{"../core/geometry":52,"../lib/three":95}],91:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
@@ -63051,8 +63048,8 @@ registerGeometry('torus', {
     arc: {default: 360},
     radius: {default: 1, min: 0},
     radiusTubular: {default: 0.2, min: 0},
-    segmentsRadial: {efault: 36, min: 0, type: 'int'},
-    segmentsTubular: {default: 32, min: 0, type: 'int'}
+    segmentsRadial: {efault: 36, min: 2, type: 'int'},
+    segmentsTubular: {default: 32, min: 3, type: 'int'}
   },
 
   init: function (data) {
@@ -63062,18 +63059,18 @@ registerGeometry('torus', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],96:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],92:[function(_dereq_,module,exports){
 var registerGeometry = _dereq_('../core/geometry').registerGeometry;
 var THREE = _dereq_('../lib/three');
 
 registerGeometry('torusKnot', {
   schema: {
-    p: {default: 2, type: 'int'},
-    q: {default: 3, type: 'int'},
+    p: {default: 2, min: 1, type: 'int'},
+    q: {default: 3, min: 1, type: 'int'},
     radius: {default: 1, min: 0},
     radiusTubular: {default: 0.2, min: 0},
-    segmentsRadial: {efault: 36, min: 0, type: 'int'},
-    segmentsTubular: {default: 32, min: 0, type: 'int'}
+    segmentsRadial: {default: 36, min: 3, type: 'int'},
+    segmentsTubular: {default: 100, min: 3, type: 'int'}
   },
 
   init: function (data) {
@@ -63083,7 +63080,7 @@ registerGeometry('torusKnot', {
   }
 });
 
-},{"../core/geometry":52,"../lib/three":99}],97:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../lib/three":95}],93:[function(_dereq_,module,exports){
 // Polyfill `Promise`.
 window.Promise = window.Promise || _dereq_('promise-polyfill');
 
@@ -63154,6 +63151,9 @@ module.exports = window.AFRAME = {
   registerPrimitive: registerPrimitive,
   registerShader: registerShader,
   registerSystem: registerSystem,
+  primitives: {
+    getMeshMixin: _dereq_('./extras/primitives/getMeshMixin')
+  },
   shaders: shaders,
   systems: systems,
   THREE: THREE,
@@ -63162,7 +63162,7 @@ module.exports = window.AFRAME = {
   version: pkg.version
 };
 
-},{"../package":19,"./components/index":24,"./core/a-animation":44,"./core/a-assets":45,"./core/a-cubemap":46,"./core/a-entity":47,"./core/a-mixin":48,"./core/a-node":49,"./core/component":51,"./core/geometry":52,"./core/scene/a-scene":54,"./core/shader":59,"./core/system":60,"./extras/components/":61,"./extras/declarative-events/":63,"./extras/primitives/":65,"./extras/primitives/registerPrimitive":85,"./geometries/index":91,"./lib/three":99,"./shaders/index":101,"./style/aframe.css":103,"./style/rStats.css":104,"./systems/index":107,"./utils/":112,"present":9,"promise-polyfill":11,"tween.js":17,"webvr-polyfill":18}],98:[function(_dereq_,module,exports){
+},{"../package":19,"./components/index":24,"./core/a-animation":44,"./core/a-assets":45,"./core/a-cubemap":46,"./core/a-entity":47,"./core/a-mixin":48,"./core/a-node":49,"./core/component":51,"./core/geometry":52,"./core/scene/a-scene":54,"./core/shader":59,"./core/system":60,"./extras/components/":61,"./extras/declarative-events/":63,"./extras/primitives/":65,"./extras/primitives/getMeshMixin":64,"./extras/primitives/registerPrimitive":78,"./geometries/index":85,"./lib/three":95,"./shaders/index":97,"./style/aframe.css":99,"./style/rStats.css":100,"./systems/index":103,"./utils/":109,"present":10,"promise-polyfill":11,"tween.js":17,"webvr-polyfill":18}],94:[function(_dereq_,module,exports){
 window.aframeStats = function (scene) {
   var _rS = null;
   var _scene = scene;
@@ -63209,7 +63209,7 @@ if (typeof module === 'object') {
   };
 }
 
-},{}],99:[function(_dereq_,module,exports){
+},{}],95:[function(_dereq_,module,exports){
 (function (global){
 var THREE = global.THREE = _dereq_('three');
 
@@ -63242,7 +63242,7 @@ module.exports = THREE;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"../../vendor/VRControls":117,"../../vendor/VREffect":118,"three":16,"three/examples/js/loaders/ColladaLoader":13,"three/examples/js/loaders/MTLLoader":14,"three/examples/js/loaders/OBJLoader":15}],100:[function(_dereq_,module,exports){
+},{"../../vendor/VRControls":113,"../../vendor/VREffect":114,"three":16,"three/examples/js/loaders/ColladaLoader":13,"three/examples/js/loaders/MTLLoader":14,"three/examples/js/loaders/OBJLoader":15}],96:[function(_dereq_,module,exports){
 var registerShader = _dereq_('../core/shader').registerShader;
 var THREE = _dereq_('../lib/three');
 var utils = _dereq_('../utils/');
@@ -63268,13 +63268,11 @@ module.exports.Component = registerShader('flat', {
     this.textureSrc = null;
     this.material = new THREE.MeshBasicMaterial(getMaterialData(data));
     utils.material.updateMap(this, data);
-    return this.material;
   },
 
   update: function (data) {
     this.updateMaterial(data);
     utils.material.updateMap(this, data);
-    return this.material;
   },
 
   /**
@@ -63304,11 +63302,11 @@ function getMaterialData (data) {
   };
 }
 
-},{"../core/shader":59,"../lib/three":99,"../utils/":112}],101:[function(_dereq_,module,exports){
+},{"../core/shader":59,"../lib/three":95,"../utils/":109}],97:[function(_dereq_,module,exports){
 _dereq_('./flat');
 _dereq_('./standard');
 
-},{"./flat":100,"./standard":102}],102:[function(_dereq_,module,exports){
+},{"./flat":96,"./standard":98}],98:[function(_dereq_,module,exports){
 var registerShader = _dereq_('../core/shader').registerShader;
 var THREE = _dereq_('../lib/three');
 var utils = _dereq_('../utils/');
@@ -63321,15 +63319,15 @@ var texturePromises = {};
  */
 module.exports.Component = registerShader('standard', {
   schema: {
-    color: { type: 'color' },
-    envMap: { default: '' },
-    fog: { default: true },
-    height: { default: 256 },
-    metalness: { default: 0.0, min: 0.0, max: 1.0 },
-    repeat: { default: '' },
-    src: { default: '' },
-    roughness: { default: 0.5, min: 0.0, max: 1.0 },
-    width: { default: 512 }
+    color: {type: 'color'},
+    envMap: {default: ''},
+    fog: {default: true},
+    height: {default: 256},
+    metalness: {default: 0.0, min: 0.0, max: 1.0},
+    repeat: {default: ''},
+    roughness: {default: 0.5, min: 0.0, max: 1.0},
+    src: {default: ''},
+    width: {default: 512}
   },
   /**
    * Initializes the shader.
@@ -63339,14 +63337,12 @@ module.exports.Component = registerShader('standard', {
     this.material = new THREE.MeshStandardMaterial(getMaterialData(data));
     utils.material.updateMap(this, data);
     this.updateEnvMap(data);
-    return this.material;
   },
 
   update: function (data) {
     this.updateMaterial(data);
     utils.material.updateMap(this, data);
     this.updateEnvMap(data);
-    return this.material;
   },
 
   /**
@@ -63412,16 +63408,17 @@ module.exports.Component = registerShader('standard', {
 function getMaterialData (data) {
   return {
     color: new THREE.Color(data.color),
+    fog: data.fog,
     metalness: data.metalness,
     roughness: data.roughness
   };
 }
 
-},{"../core/shader":59,"../lib/three":99,"../utils/":112}],103:[function(_dereq_,module,exports){
+},{"../core/shader":59,"../lib/three":95,"../utils/":109}],99:[function(_dereq_,module,exports){
 var css = "html{bottom:0;left:0;position:fixed;right:0;top:0}:-webkit-full-screen{background-color:transparent}body{height:100%;margin:0;overflow:hidden;padding:0;width:100%}.a-hidden{display:none!important}.a-canvas{height:100%;left:0;position:absolute;top:0;width:100%}a-assets,a-scene audio,a-scene img,a-scene video{display:none}.a-enter-vr-modal,.a-orientation-modal{font-family:Consolas,Andale Mono,Courier New,monospace}.a-enter-vr-modal{font-size:11px;line-height:15px}.a-enter-vr-modal a{border-bottom:1px solid #fff;padding:2px 0;text-decoration:none;transition:.1s color ease-in}.a-enter-vr-modal a:hover{background-color:#fff;color:#111;padding:2px 4px;position:relative;left:-4px}.a-enter-vr{align-items:flex-end;-webkit-align-items:flex-end;bottom:5px;display:flex;display:-webkit-flex;font-family:sans-serif,monospace;font-size:13px;font-weight:200;line-height:16px;height:72px;position:fixed;right:5px}.a-enter-vr-button,.a-enter-vr-modal,.a-enter-vr-modal a{color:#fff}.a-enter-vr-button{background:url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20245.82%20141.73%22%3E%3Cdefs%3E%3Cstyle%3E.a%7Bfill%3A%23fff%3Bfill-rule%3Aevenodd%3B%7D%3C%2Fstyle%3E%3C%2Fdefs%3E%3Ctitle%3Emask%3C%2Ftitle%3E%3Cpath%20class%3D%22a%22%20d%3D%22M175.56%2C111.37c-22.52%2C0-40.77-18.84-40.77-42.07S153%2C27.24%2C175.56%2C27.24s40.77%2C18.84%2C40.77%2C42.07S198.08%2C111.37%2C175.56%2C111.37ZM26.84%2C69.31c0-23.23%2C18.25-42.07%2C40.77-42.07s40.77%2C18.84%2C40.77%2C42.07-18.26%2C42.07-40.77%2C42.07S26.84%2C92.54%2C26.84%2C69.31ZM27.27%2C0C11.54%2C0%2C0%2C12.34%2C0%2C28.58V110.9c0%2C16.24%2C11.54%2C30.83%2C27.27%2C30.83H99.57c2.17%2C0%2C4.19-1.83%2C5.4-3.7L116.47%2C118a8%2C8%2C0%2C0%2C1%2C12.52-.18l11.51%2C20.34c1.2%2C1.86%2C3.22%2C3.61%2C5.39%2C3.61h72.29c15.74%2C0%2C27.63-14.6%2C27.63-30.83V28.58C245.82%2C12.34%2C233.93%2C0%2C218.19%2C0H27.27Z%22%2F%3E%3C%2Fsvg%3E) 50% 50%/70% 70% no-repeat rgba(0,0,0,.35);border:0;bottom:0;cursor:pointer;height:50px;position:absolute;right:0;transition:background-color .05s ease;-webkit-transition:background-color .05s ease;width:60px;z-index:999999}.a-enter-vr-button:active,.a-enter-vr-button:hover{background-color:#666}[data-a-enter-vr-no-webvr] .a-enter-vr-button{border-color:#666;opacity:.65}[data-a-enter-vr-no-webvr] .a-enter-vr-button:active,[data-a-enter-vr-no-webvr] .a-enter-vr-button:hover{background-color:rgba(0,0,0,.35);cursor:not-allowed}.a-enter-vr-modal{background-color:#666;border-radius:0;display:none;min-height:32px;margin-right:70px;padding:9px;width:280px;position:relative}.a-enter-vr-modal:after{border-bottom:10px solid transparent;border-left:10px solid #666;border-top:10px solid transparent;display:inline-block;content:'';position:absolute;right:-5px;top:5px;width:0;height:0}.a-enter-vr-modal a,.a-enter-vr-modal p{display:inline}.a-enter-vr-modal p{margin:0}.a-enter-vr-modal p:after{content:' '}[data-a-enter-vr-no-headset].a-enter-vr:hover .a-enter-vr-modal,[data-a-enter-vr-no-webvr].a-enter-vr:hover .a-enter-vr-modal{display:block}.a-orientation-modal{background:url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20xmlns%3Axlink%3D%22http%3A//www.w3.org/1999/xlink%22%20version%3D%221.1%22%20x%3D%220px%22%20y%3D%220px%22%20viewBox%3D%220%200%2090%2090%22%20enable-background%3D%22new%200%200%2090%2090%22%20xml%3Aspace%3D%22preserve%22%3E%3Cpolygon%20points%3D%220%2C0%200%2C0%200%2C0%20%22%3E%3C/polygon%3E%3Cg%3E%3Cpath%20d%3D%22M71.545%2C48.145h-31.98V20.743c0-2.627-2.138-4.765-4.765-4.765H18.456c-2.628%2C0-4.767%2C2.138-4.767%2C4.765v42.789%20%20%20c0%2C2.628%2C2.138%2C4.766%2C4.767%2C4.766h5.535v0.959c0%2C2.628%2C2.138%2C4.765%2C4.766%2C4.765h42.788c2.628%2C0%2C4.766-2.137%2C4.766-4.765V52.914%20%20%20C76.311%2C50.284%2C74.173%2C48.145%2C71.545%2C48.145z%20M18.455%2C16.935h16.344c2.1%2C0%2C3.808%2C1.708%2C3.808%2C3.808v27.401H37.25V22.636%20%20%20c0-0.264-0.215-0.478-0.479-0.478H16.482c-0.264%2C0-0.479%2C0.214-0.479%2C0.478v36.585c0%2C0.264%2C0.215%2C0.478%2C0.479%2C0.478h7.507v7.644%20%20%20h-5.534c-2.101%2C0-3.81-1.709-3.81-3.81V20.743C14.645%2C18.643%2C16.354%2C16.935%2C18.455%2C16.935z%20M16.96%2C23.116h19.331v25.031h-7.535%20%20%20c-2.628%2C0-4.766%2C2.139-4.766%2C4.768v5.828h-7.03V23.116z%20M71.545%2C73.064H28.757c-2.101%2C0-3.81-1.708-3.81-3.808V52.914%20%20%20c0-2.102%2C1.709-3.812%2C3.81-3.812h42.788c2.1%2C0%2C3.809%2C1.71%2C3.809%2C3.812v16.343C75.354%2C71.356%2C73.645%2C73.064%2C71.545%2C73.064z%22%3E%3C/path%3E%3Cpath%20d%3D%22M28.919%2C58.424c-1.466%2C0-2.659%2C1.193-2.659%2C2.66c0%2C1.466%2C1.193%2C2.658%2C2.659%2C2.658c1.468%2C0%2C2.662-1.192%2C2.662-2.658%20%20%20C31.581%2C59.617%2C30.387%2C58.424%2C28.919%2C58.424z%20M28.919%2C62.786c-0.939%2C0-1.703-0.764-1.703-1.702c0-0.939%2C0.764-1.704%2C1.703-1.704%20%20%20c0.94%2C0%2C1.705%2C0.765%2C1.705%2C1.704C30.623%2C62.022%2C29.858%2C62.786%2C28.919%2C62.786z%22%3E%3C/path%3E%3Cpath%20d%3D%22M69.654%2C50.461H33.069c-0.264%2C0-0.479%2C0.215-0.479%2C0.479v20.288c0%2C0.264%2C0.215%2C0.478%2C0.479%2C0.478h36.585%20%20%20c0.263%2C0%2C0.477-0.214%2C0.477-0.478V50.939C70.131%2C50.676%2C69.917%2C50.461%2C69.654%2C50.461z%20M69.174%2C51.417V70.75H33.548V51.417H69.174z%22%3E%3C/path%3E%3Cpath%20d%3D%22M45.201%2C30.296c6.651%2C0%2C12.233%2C5.351%2C12.551%2C11.977l-3.033-2.638c-0.193-0.165-0.507-0.142-0.675%2C0.048%20%20%20c-0.174%2C0.198-0.153%2C0.501%2C0.045%2C0.676l3.883%2C3.375c0.09%2C0.075%2C0.198%2C0.115%2C0.312%2C0.115c0.141%2C0%2C0.273-0.061%2C0.362-0.166%20%20%20l3.371-3.877c0.173-0.2%2C0.151-0.502-0.047-0.675c-0.194-0.166-0.508-0.144-0.676%2C0.048l-2.592%2C2.979%20%20%20c-0.18-3.417-1.629-6.605-4.099-9.001c-2.538-2.461-5.877-3.817-9.404-3.817c-0.264%2C0-0.479%2C0.215-0.479%2C0.479%20%20%20C44.72%2C30.083%2C44.936%2C30.296%2C45.201%2C30.296z%22%3E%3C/path%3E%3C/g%3E%3C/svg%3E) center/50% 50% no-repeat rgba(244,244,244,1);font-size:14px;font-weight:600;height:100%;left:0;line-height:20px;position:absolute;top:0;width:100%}.a-orientation-modal:after{color:#666;content:\"Insert phone into Cardboard holder.\";display:block;position:absolute;text-align:center;top:70%;transform:translateY(-70%);width:100%}.a-orientation-modal button{background:url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20xmlns%3Axlink%3D%22http%3A//www.w3.org/1999/xlink%22%20version%3D%221.1%22%20x%3D%220px%22%20y%3D%220px%22%20viewBox%3D%220%200%20100%20100%22%20enable-background%3D%22new%200%200%20100%20100%22%20xml%3Aspace%3D%22preserve%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M55.209%2C50l17.803-17.803c1.416-1.416%2C1.416-3.713%2C0-5.129c-1.416-1.417-3.713-1.417-5.129%2C0L50.08%2C44.872%20%20L32.278%2C27.069c-1.416-1.417-3.714-1.417-5.129%2C0c-1.417%2C1.416-1.417%2C3.713%2C0%2C5.129L44.951%2C50L27.149%2C67.803%20%20c-1.417%2C1.416-1.417%2C3.713%2C0%2C5.129c0.708%2C0.708%2C1.636%2C1.062%2C2.564%2C1.062c0.928%2C0%2C1.856-0.354%2C2.564-1.062L50.08%2C55.13l17.803%2C17.802%20%20c0.708%2C0.708%2C1.637%2C1.062%2C2.564%2C1.062s1.856-0.354%2C2.564-1.062c1.416-1.416%2C1.416-3.713%2C0-5.129L55.209%2C50z%22%3E%3C/path%3E%3C/svg%3E) no-repeat;border:none;height:50px;text-indent:-9999px;width:50px}@media (min-width:480px){.a-enter-vr{bottom:20px;right:20px}.a-enter-vr-modal{width:400px}}"; (_dereq_("browserify-css").createStyle(css, { "href": "src/style/aframe.css"})); module.exports = css;
-},{"browserify-css":1}],104:[function(_dereq_,module,exports){
+},{"browserify-css":1}],100:[function(_dereq_,module,exports){
 var css = ".rs-base{background-color:#EF2D5E;border-radius:0;font:10px monospace;left:5px;line-height:1em;opacity:.75;overflow:hidden;padding:10px;position:fixed;top:5px;width:300px;z-index:10000}.rs-base div.hidden{display:none}.rs-base h1{color:#fff;cursor:pointer;font-size:1.4em;font-weight:300;margin:0 0 5px;padding:0}.rs-group{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-flex-direction:column-reverse;flex-direction:column-reverse;margin-bottom:5px}.rs-group:last-child{margin-bottom:0}.rs-counter-base{align-items:center;display:-webkit-box;display:-webkit-flex;display:flex;height:10px;-webkit-justify-content:space-between;justify-content:space-between;margin:2px 0}.rs-counter-id{font-weight:300;-webkit-box-ordinal-group:0;-webkit-order:0;order:0;width:50px}.rs-counter-value{font-weight:300;-webkit-box-ordinal-group:1;-webkit-order:1;order:1;text-align:right;width:35px}.rs-canvas{-webkit-box-ordinal-group:2;-webkit-order:2;order:2}@media (min-width:480px){.rs-base{left:20px;top:20px}}"; (_dereq_("browserify-css").createStyle(css, { "href": "src/style/rStats.css"})); module.exports = css;
-},{"browserify-css":1}],105:[function(_dereq_,module,exports){
+},{"browserify-css":1}],101:[function(_dereq_,module,exports){
 var registerSystem = _dereq_('../core/system').registerSystem;
 
 var DEFAULT_CAMERA_ATTR = 'data-aframe-default-camera';
@@ -63501,8 +63498,8 @@ module.exports.System = registerSystem('camera', {
 
     // Make new camera active.
     this.activeCameraEl = newCameraEl;
+    this.activeCameraEl.play();
     sceneEl.camera = newCamera;
-    sceneEl.emit('camera-set-active', {cameraEl: newCameraEl});
 
     // Disable current camera
     if (previousCamera) {
@@ -63515,6 +63512,7 @@ module.exports.System = registerSystem('camera', {
       cameraEl.setAttribute('camera', 'active', false);
       cameraEl.pause();
     }
+    sceneEl.emit('camera-set-active', {cameraEl: newCameraEl});
   }
 });
 
@@ -63534,7 +63532,7 @@ function removeDefaultCamera (sceneEl) {
   sceneEl.removeChild(defaultCameraWrapper);
 }
 
-},{"../core/system":60}],106:[function(_dereq_,module,exports){
+},{"../core/system":60}],102:[function(_dereq_,module,exports){
 var geometries = _dereq_('../core/geometry').geometries;
 var registerSystem = _dereq_('../core/system').registerSystem;
 var THREE = _dereq_('../lib/three');
@@ -63669,17 +63667,18 @@ function toBufferGeometry (geometry, doBuffer) {
   if (!doBuffer) { return geometry; }
 
   bufferGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+  bufferGeometry.metadata = {type: geometry.type, parameters: geometry.parameters || {}};
   geometry.dispose();  // Dispose no longer needed non-buffer geometry.
   return bufferGeometry;
 }
 
-},{"../core/geometry":52,"../core/system":60,"../lib/three":99}],107:[function(_dereq_,module,exports){
+},{"../core/geometry":52,"../core/system":60,"../lib/three":95}],103:[function(_dereq_,module,exports){
 _dereq_('./camera');
 _dereq_('./geometry');
 _dereq_('./material');
 _dereq_('./light');
 
-},{"./camera":105,"./geometry":106,"./light":108,"./material":109}],108:[function(_dereq_,module,exports){
+},{"./camera":101,"./geometry":102,"./light":104,"./material":105}],104:[function(_dereq_,module,exports){
 var registerSystem = _dereq_('../core/system').registerSystem;
 
 var DEFAULT_LIGHT_ATTR = 'data-aframe-default-light';
@@ -63727,13 +63726,12 @@ module.exports.System = registerSystem('light', {
     var ambientLight = document.createElement('a-entity');
     var directionalLight = document.createElement('a-entity');
 
-    ambientLight.setAttribute('light',
-                              {color: '#fff', type: 'ambient'});
+    ambientLight.setAttribute('light', {color: '#BBB', type: 'ambient'});
     ambientLight.setAttribute(DEFAULT_LIGHT_ATTR, '');
     sceneEl.appendChild(ambientLight);
 
-    directionalLight.setAttribute('light', { color: '#fff', intensity: 0.2 });
-    directionalLight.setAttribute('position', { x: -1, y: 2, z: 1 });
+    directionalLight.setAttribute('light', {color: '#FFF', intensity: 0.6});
+    directionalLight.setAttribute('position', {x: -0.5, y: 1, z: 1});
     directionalLight.setAttribute(DEFAULT_LIGHT_ATTR, '');
     sceneEl.appendChild(directionalLight);
 
@@ -63741,7 +63739,7 @@ module.exports.System = registerSystem('light', {
   }
 });
 
-},{"../core/system":60}],109:[function(_dereq_,module,exports){
+},{"../core/system":60}],105:[function(_dereq_,module,exports){
 var registerSystem = _dereq_('../core/system').registerSystem;
 var THREE = _dereq_('../lib/three');
 var utils = _dereq_('../utils/');
@@ -63779,9 +63777,10 @@ module.exports.System = registerSystem('material', {
    */
   loadTexture: function (src, data, cb) {
     var self = this;
-    utils.srcLoader.validateSrc(src, loadImageCb, loadVideoCb);
+    utils.srcLoader.validateSrc(src, loadImageCb, loadVideoCb, loadCanvasCb);
     function loadImageCb (src) { self.loadImage(src, data, cb); }
     function loadVideoCb (src) { self.loadVideo(src, data, cb); }
+    function loadCanvasCb (src) { self.loadCanvas(src, data, cb); }
   },
 
   /**
@@ -63805,6 +63804,20 @@ module.exports.System = registerSystem('material', {
     // Texture not yet being loaded. Start loading it.
     textureCache[hash] = loadImageTexture(src, data);
     textureCache[hash].then(handleImageTextureLoaded);
+  },
+
+  /**
+   * High-level function for loading canvas textures (THREE.Texture).
+   *
+   * @param {Element|string} src - Texture source.
+   * @param {object} data - Texture data.
+   * @param {function} cb - Callback to pass texture to.
+   */
+  loadCanvas: function (src, data, cb) {
+    // Hack readyState and HAVE_CURRENT_DATA on canvas to work with THREE.VideoTexture
+    src.readyState = 2;
+    src.HAVE_CURRENT_DATA = 2;
+    this.loadVideo(src, data, cb);
   },
 
     /**
@@ -63985,7 +63998,7 @@ function setTextureProperties (texture, data) {
 
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(parseInt(repeatXY[0], 10), parseInt(repeatXY[1], 10));
+  texture.repeat.set(parseFloat(repeatXY[0]), parseFloat(repeatXY[1]));
 }
 
 /**
@@ -64003,7 +64016,7 @@ function createVideoEl (src, width, height) {
   videoEl.setAttribute('webkit-playsinline', '');  // Support inline videos for iOS webviews.
   videoEl.autoplay = true;
   videoEl.loop = true;
-  videoEl.crossOrigin = true;
+  videoEl.crossOrigin = 'use-credentials';
   videoEl.addEventListener('error', function () {
     warn('`$s` is not a valid video', src);
   }, true);
@@ -64033,13 +64046,13 @@ function fixVideoAttributes (videoEl) {
   if (videoEl.getAttribute('preload') === 'false') {
     videoEl.preload = 'none';
   }
-  videoEl.crossOrigin = true;
+  videoEl.crossOrigin = videoEl.crossOrigin || 'use-credentials';
   // To support inline videos in iOS webviews.
   videoEl.setAttribute('webkit-playsinline', '');
   return videoEl;
 }
 
-},{"../core/system":60,"../lib/three":99,"../utils/":112}],110:[function(_dereq_,module,exports){
+},{"../core/system":60,"../lib/three":95,"../utils/":109}],106:[function(_dereq_,module,exports){
 /* global THREE */
 
 // Coordinate string regex. Handles negative, positive, and decimals.
@@ -64113,7 +64126,7 @@ module.exports.toVector3 = function (vec3) {
   return new THREE.Vector3(vec3.x, vec3.y, vec3.z);
 };
 
-},{}],111:[function(_dereq_,module,exports){
+},{}],107:[function(_dereq_,module,exports){
 (function (process){
 var debugLib = _dereq_('debug');
 var extend = _dereq_('object-assign');
@@ -64210,7 +64223,37 @@ module.exports = debug;
 
 }).call(this,_dereq_('_process'))
 
-},{"_process":10,"debug":2,"object-assign":8}],112:[function(_dereq_,module,exports){
+},{"_process":2,"debug":3,"object-assign":9}],108:[function(_dereq_,module,exports){
+/**
+ * Get component property using encoded component name + component property name with a
+ * delimiter.
+ */
+module.exports.getComponentProperty = function (el, name, delimiter) {
+  var splitName;
+  delimiter = delimiter || '.';
+  if (name.indexOf(delimiter) !== -1) {
+    splitName = name.split(delimiter);
+    return el.getComputedAttribute(splitName[0])[splitName[1]];
+  }
+  return el.getComputedAttribute(name);
+};
+
+/**
+ * Set component property using encoded component name + component property name with a
+ * delimiter.
+ */
+module.exports.setComponentProperty = function (el, name, value, delimiter) {
+  var splitName;
+  delimiter = delimiter || '.';
+  if (name.indexOf(delimiter) !== -1) {
+    splitName = name.split(delimiter);
+    el.setAttribute(splitName[0], splitName[1], value);
+    return;
+  }
+  el.setAttribute(name, value);
+};
+
+},{}],109:[function(_dereq_,module,exports){
 /* global CustomEvent, location */
 /* Centralized place to reference utilities since utils is exposed to the user. */
 
@@ -64219,9 +64262,9 @@ var objectAssign = _dereq_('object-assign');
 
 module.exports.coordinates = _dereq_('./coordinates');
 module.exports.debug = _dereq_('./debug');
+module.exports.entity = _dereq_('./entity');
 module.exports.material = _dereq_('./material');
 module.exports.styleParser = _dereq_('./styleParser');
-module.exports.queryParams = _dereq_('./queryParams');
 
 /**
  * Fires a custom DOM event.
@@ -64238,29 +64281,6 @@ module.exports.fireEvent = function (el, name, data) {
   var evt = new CustomEvent(name, data);
   evt.target = el;
   el.dispatchEvent(evt);
-};
-
-/**
- * Throws an error given a message.
- *
- * @param {String} msg Error message.
- */
-module.exports.error = function (msg) {
-  throw new Error(msg);
-};
-
-/**
- * Emits a console warning given passed message argument(s).
- */
-module.exports.warn = function () {
-  console.warn.apply(console, arguments);
-};
-
-/**
- * Emits a console log given passed message argument(s).
- */
-module.exports.log = function () {
-  console.log.apply(console, arguments);
 };
 
 /**
@@ -64428,7 +64448,7 @@ module.exports.isIframed = function () {
 // Must be at bottom to avoid circular dependency.
 module.exports.srcLoader = _dereq_('./src-loader');
 
-},{"./coordinates":110,"./debug":111,"./material":113,"./queryParams":114,"./src-loader":115,"./styleParser":116,"deep-assign":4,"object-assign":8}],113:[function(_dereq_,module,exports){
+},{"./coordinates":106,"./debug":107,"./entity":108,"./material":110,"./src-loader":111,"./styleParser":112,"deep-assign":6,"object-assign":9}],110:[function(_dereq_,module,exports){
 /**
  * Update `material.map` given `data.src`. For standard and flat shaders.
  *
@@ -64482,29 +64502,7 @@ function handleTextureEvents (el, texture) {
 }
 module.exports.handleTextureEvents = handleTextureEvents;
 
-},{}],114:[function(_dereq_,module,exports){
-module.exports = (function () {
-  var query_string = {};
-  var query = window.location.search.substring(1);
-  var vars = query.split('&');
-  for (var i = 0; i < vars.length; i++) {
-    var pair = vars[i].split('=');
-        // If first entry with this name
-    if (typeof query_string[pair[0]] === 'undefined') {
-      query_string[pair[0]] = decodeURIComponent(pair[1]);
-        // If second entry with this name
-    } else if (typeof query_string[pair[0]] === 'string') {
-      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
-      query_string[pair[0]] = arr;
-        // If third or later entry with this name
-    } else {
-      query_string[pair[0]].push(decodeURIComponent(pair[1]));
-    }
-  }
-  return query_string;
-})();
-
-},{}],115:[function(_dereq_,module,exports){
+},{}],111:[function(_dereq_,module,exports){
 /* global Image */
 var debug = _dereq_('./debug');
 
@@ -64512,7 +64510,7 @@ var warn = debug('utils:src-loader:warn');
 
 /**
  * Validates a texture, either as a selector or as a URL.
- * Detects whether `src` is pointing to an image or to a video, and invokes the
+ * Detects whether `src` is pointing to an image, video, or canvas, and invokes the
  * appropriate callback.
  *
  * If `src` is selector, check if it's valid, return the el in the callback.
@@ -64523,11 +64521,13 @@ var warn = debug('utils:src-loader:warn');
  * @params {string} src - A selector or a URL. URLs must be wrapped by `url()`.
  * @params {function} isImageCb - callback if texture is an image.
  * @params {function} isVideoCb - callback if texture is a video.
+ * @params {function} isCanvasCb - callback if texture is a canvas.
  */
-function validateSrc (src, isImageCb, isVideoCb) {
+function validateSrc (src, isImageCb, isVideoCb, isCanvasCb) {
   var textureEl;
   var isImage;
   var isVideo;
+  var isCanvas;
   var url = parseUrl(src);
 
   // src is a url.
@@ -64544,11 +64544,13 @@ function validateSrc (src, isImageCb, isVideoCb) {
   if (!textureEl) { return; }
   isImage = textureEl && textureEl.tagName === 'IMG';
   isVideo = textureEl && textureEl.tagName === 'VIDEO';
+  isCanvas = textureEl && textureEl.tagName === 'CANVAS';
   if (isImage) { return isImageCb(textureEl); }
   if (isVideo) { return isVideoCb(textureEl); }
+  if (isCanvas) { return isCanvasCb(textureEl); }
 
-  // src is a valid selector but doesn't match with a <img> or <video> element.
-  warn('"%s" does not point to a valid <img> or <video> element', src);
+  // src is a valid selector but doesn't match with a <img>, <video>, or <canvas> element.
+  warn('"%s" does not point to a valid <img>, <video>, or <canvas> element', src);
 }
 
 /**
@@ -64649,7 +64651,7 @@ module.exports = {
   validateCubemapSrc: validateCubemapSrc
 };
 
-},{"./debug":111}],116:[function(_dereq_,module,exports){
+},{"./debug":107}],112:[function(_dereq_,module,exports){
 /* Utils for parsing style-like strings (e.g., "primitive: box; width: 5; height: 4.5"). */
 var styleParser = _dereq_('style-attr');
 
@@ -64709,7 +64711,7 @@ function transformKeysToCamelCase (obj) {
 }
 module.exports.transformKeysToCamelCase = transformKeysToCamelCase;
 
-},{"style-attr":12}],117:[function(_dereq_,module,exports){
+},{"style-attr":12}],113:[function(_dereq_,module,exports){
 /**
  * @author dmarcos / https://github.com/dmarcos
  * @author mrdoob / http://mrdoob.com
@@ -64886,7 +64888,7 @@ THREE.VRControls = function ( object, onError ) {
 
 };
 
-},{}],118:[function(_dereq_,module,exports){
+},{}],114:[function(_dereq_,module,exports){
 /**
  * @author dmarcos / https://github.com/dmarcos
  * @author mrdoob / http://mrdoob.com
@@ -65292,7 +65294,7 @@ THREE.VREffect = function ( renderer, onError ) {
 
 };
 
-},{}],119:[function(_dereq_,module,exports){
+},{}],115:[function(_dereq_,module,exports){
 window.glStats = function () {
 
     var _rS = null;
@@ -65557,7 +65559,7 @@ if (typeof module === 'object') {
   };
 }
 
-},{}],120:[function(_dereq_,module,exports){
+},{}],116:[function(_dereq_,module,exports){
 // performance.now() polyfill from https://gist.github.com/paulirish/5438650
 'use strict';
 
@@ -66012,7 +66014,7 @@ if (typeof module === 'object') {
   module.exports = window.rStats;
 }
 
-},{}],121:[function(_dereq_,module,exports){
+},{}],117:[function(_dereq_,module,exports){
 /*
  * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66074,7 +66076,7 @@ Util.isLandscapeMode = function() {
 
 module.exports = Util;
 
-},{}],122:[function(_dereq_,module,exports){
+},{}],118:[function(_dereq_,module,exports){
 /*
  * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66150,6 +66152,6 @@ function getWakeLock() {
 
 module.exports = getWakeLock();
 
-},{"./util.js":121}]},{},[97])(97)
+},{"./util.js":117}]},{},[93])(93)
 });
 //# sourceMappingURL=aframe.js.map

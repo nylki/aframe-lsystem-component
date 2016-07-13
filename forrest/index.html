@@ -1,0 +1,55 @@
+<html>
+  <head>
+    <title>A-Frame L-System Component - Forrest</title>
+    <script src="../libs/aframe.js"></script>
+    <script src="../libs/aframe-randomizer-components.min.js"></script>
+    <script src="../libs/aframe-lsystem-component.js"></script>
+    <style media="screen">
+      body {
+        background-color: #94bfcf;
+      }
+    </style>
+  </head>
+  <body>
+    <a-scene fog="type: exponential; color: rgb(251, 217, 177); density:0.05">
+      
+      <a-assets>
+        <a-mixin id="yellow" material="color: yellow; roughness: 0.6"></a-mixin>
+        <a-mixin id="green" material="color: #528e1e; roughness: 0.2"></a-mixin>
+        <a-mixin id="brown" material="color: #877504; roughness: 0.8;"></a-mixin>
+        
+        <a-mixin id="line" geometry="primitive: cone; height: 2; radiusBottom: 1; radiusTop: 0.66; segmentsRadial:6; segmentsHeight:2" ></a-mixin>
+        
+        <a-mixin id="flower" geometry="primitive: sphere; radius: 1; segmentsWidth:6; segmentsHeight: 6"></a-mixin>
+      </a-assets>
+      <a-sky color="rgb(29, 64, 145)"></a-sky>
+      <a-entity id="floor" geometry="primitive: plane; width: 100; height: 100" rotation="-90 0 0" mixin="brown"></a-entity>
+      <a-entity id="trees"> </a-entity>
+
+</a-scene>
+
+<script type="text/javascript">
+
+  var getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  var getRandom = (min, max) => (Math.random() * (max - min + 1)) + min;
+
+
+  let treeCount = Math.floor(Math.max(35, Math.random() * 60));
+  let trees = document.getElementById('trees');
+  
+  for (let i = 0; i < treeCount; i++) {
+    let tree = document.createElement('a-entity');
+    tree.setAttribute('random-position', 'min: -20 -0.2 -20; max: 20 0 20');
+    tree.setAttribute('random-scale', 'min: 1 1 1; max: 3 1.5 1.5');
+    tree.setAttribute('rotation', '' + getRandomInt(-10, 10) + ' ' + getRandomInt(0, 360) +  ' 0')
+
+    // We can use template strings (``) to allow expressions (${}), useful for random
+    // angle or iterations
+    tree.setAttribute('lsystem', `axiom: F!F!X; productions: X:FX[+!XF'][--!F+/X'][&!FXFX!F''][^!FX!F'']; segmentMixins: F:brown line,brown line,brown line,brown line,green line,green line,green line,yellow flower; angle: ${getRandom(15, 35)}; iterations: ${getRandomInt(1, 4)}; mergeGeometries:true`);
+    
+    trees.appendChild(tree);
+  }
+</script>
+
+</body>
+</html>

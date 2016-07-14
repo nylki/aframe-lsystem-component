@@ -47,16 +47,22 @@ here is a list of all supported symbols and their interpretation in this compone
 - `]` ends branch
 
 Besides those *turtle graphic* symbols, you define your own symbols like `F` for drawing actual geometry like lines or flowers.
-However if you want a symbol to be rendered, you need to define an entry in `segmentMixins` for it (see above).
+However if you want your symbol to be rendered, you need to define an entry in `segmentMixins`, like so:
+
+```.html
+<a-entity lsystem="axiom: A; productions: A:A+B; segmentMixins: A:line,B:blue sphere"></a-entity>
+```
+
 A fallback geometry and material if you don't define your segmentMixins is not yet implemented, but will be soon :)
 
 
-It's possible to use context sensitive productions like:
+
+It's also possible to use context sensitive productions like:
 ```.html
 <a-entity lsystem="axiom: AABC; productions: A<A>B:A+A"></a-entity>
 ```
 
-Context sensitive and stochastic productions are not yet implemented in the component.
+Parametric and stochastic productions are not yet implemented in the component.
 Native JS function parsing for productions, as the backend library allows, might added to this
 component, but is not yet done.
 

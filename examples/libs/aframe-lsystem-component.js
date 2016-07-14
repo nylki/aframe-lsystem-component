@@ -373,7 +373,7 @@
 	    if(this.segmentLengthMap.has(mixin)) return this.segmentLengthMap.get(mixin);
 	    geometry.computeBoundingBox();
 	    // TODO FIXME: use proper bounding box values, depending on this.data.translateAxis
-	    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.y - geometry.boundingBox.max.y));
+	    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x));
 	    return this.segmentLengthMap.get(mixin);
 	    
 	  },

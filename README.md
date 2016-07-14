@@ -52,7 +52,7 @@ However if you want your symbol to be rendered, you need to define an entry in `
 ```.html
 <a-entity lsystem="axiom: A; productions: A:A+B; segmentMixins: A:line,B:blue sphere"></a-entity>
 ```
-
+Be sure that you define your [mixins](https://aframe.io/docs/0.2.0/core/mixins.html) in your `<a-assets>` at the beginning of your scene.
 A fallback geometry and material if you don't define your segmentMixins is not yet implemented, but will be soon :)
 
 

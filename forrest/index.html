@@ -18,9 +18,9 @@
         <a-mixin id="green" material="color: #528e1e; roughness: 0.2"></a-mixin>
         <a-mixin id="brown" material="color: #877504; roughness: 0.8;"></a-mixin>
         
-        <a-mixin id="line" geometry="primitive: cone; height: 2; radiusBottom: 1; radiusTop: 0.66; segmentsRadial:6; segmentsHeight:2" ></a-mixin>
+        <a-mixin id="line" geometry="primitive: cone; height: 2; radiusBottom: 1; radiusTop: 0.66; segmentsRadial:3; segmentsHeight:1; open-ended:false" ></a-mixin>
         
-        <a-mixin id="flower" geometry="primitive: sphere; radius: 1; segmentsWidth:6; segmentsHeight: 6"></a-mixin>
+        <a-mixin id="flower" geometry="primitive: sphere; radius: 1; segmentsWidth:3; segmentsHeight: 3"></a-mixin>
       </a-assets>
       <a-sky color="rgb(29, 64, 145)"></a-sky>
       <a-entity id="floor" geometry="primitive: plane; width: 100; height: 100" rotation="-90 0 0" mixin="brown"></a-entity>
@@ -34,7 +34,7 @@
   var getRandom = (min, max) => (Math.random() * (max - min + 1)) + min;
 
 
-  let treeCount = Math.floor(Math.max(35, Math.random() * 60));
+  let treeCount = 25;
   let trees = document.getElementById('trees');
   
   for (let i = 0; i < treeCount; i++) {

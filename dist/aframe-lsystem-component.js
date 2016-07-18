@@ -224,24 +224,23 @@
 	    // TODO: Check if only angle changed or axiom or productions
 	    //
 	    
-	    
 	    let self = this;
 
-	    
 	    this.el.removeObject3D('mesh');
 	    
 	    if(this.segmentElementGroupsMap !== undefined) {
 	      for (let segmentElGroup of this.segmentElementGroupsMap.values()) {
+	    
 	        segmentElGroup.removeObject3D('mesh');
+	        segmentElGroup.innerHTML = '';
 	      }
 	    }
 	    
 	    if(oldData.angle && oldData.angle !== this.data.angle) {
-	      console.log('log only angle changed');
-	      this.updateSegmentMixins();
 	      this.updateTurtleGraphics();
 	    } else if(oldData.axiom === undefined || (oldData.axiom && oldData.axiom !== this.data.axiom) || (oldData.productions && JSON.stringify(oldData.productions) !== JSON.stringify(this.data.productions))) {
-	      console.log('update LSystem!');
+	      console.log('other stuff');
+	      // the following are async:
 	      this.updateLSystem();
 	      this.updateSegmentMixins();
 	      
@@ -280,8 +279,6 @@
 	    
 	    let mixin = this.mixinMap.get(symbol + cappedColorIndex);
 	    
-
-	    
 	    if(this.data.mergeGeometries === false) {
 	      let newSegment = document.createElement('a-entity');
 	      newSegment.setAttribute('mixin', mixin);
@@ -318,23 +315,21 @@
 	    let self = this;
 	    
 	    // post params to worker
-	    
+	    let params = {
+	      axiom: 		this.data.axiom,
+	      productions: this.data.productions,
+	      iterations: this.data.iterations
+	    }
 	      
-	      let params = {
-	        axiom: 		this.data.axiom,
-	        productions: this.data.productions,
-	        iterations: this.data.iterations
-	      }
+	    if(Date.now() - this.worker.startTime > 1000 ) {
+	      // if we got user input, but worker is running for over a second
+	      // terminate old worker and start new one.
+	      this.worker.terminate();
+	      this.initWorker();
+	    }
 	      
-	      if(Date.now() - this.worker.startTime > 1000 ) {
-	        // if we got user input, but worker is running for over a second
-	        // terminate old worker and start new one.
-	        this.worker.terminate();
-	        this.initWorker();
-	      }
-	      
-	      this.worker.startTime = Date.now();
-	      this.worker.postMessage(params);
+	    this.worker.startTime = Date.now();
+	    this.worker.postMessage(params);
 	  },
 	  
 	  updateSegmentMixins: function () {
@@ -412,13 +407,8 @@
 	                let translation = self.data.translateAxis.clone().multiplyScalar((segmentLength * self.segmentLengthFactor)/2);
 	                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( translation.x, translation.y, translation.z ) );
 
-	                
-	                let mergeGroup = new THREE.Mesh(
-	                  new THREE.Geometry(), segmentElGroup.getObject3D('mesh').material.clone()
-	                );
-	                
 	                self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
-	                self.mergeGroups.set(symbol + mixinColorIndex, mergeGroup);
+
 	              }
 	              
 	              segmentElGroup.removeObject3D('mesh');
@@ -444,8 +434,18 @@
 	  
 	  updateTurtleGraphics: function() {
 	    Promise.all(this.mixinPromises).then(() => {
+	      console.log('whee');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      this.transformationSegment = new THREE.Object3D();
+
+	      // set merge groups
+	      if(this.data.mergeGeometries === true)
+	      for (let [id, segmentObject] of this.segmentObjects3DMap) {
+	        this.mergeGroups.set(id, new THREE.Mesh(
+	          new THREE.Geometry(), segmentObject.material
+	        ));
+	        
+	      }
 	      
 	      
 	      // We push copies of this.transformationSegment on branch symbols inside this array.

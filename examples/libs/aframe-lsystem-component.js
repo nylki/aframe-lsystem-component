@@ -434,7 +434,6 @@
 	  
 	  updateTurtleGraphics: function() {
 	    Promise.all(this.mixinPromises).then(() => {
-	      console.log('whee');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      this.transformationSegment = new THREE.Object3D();
 
@@ -475,7 +474,7 @@
 	      // 	face.color.setHex(this.colors[colorIndex]);
 	      // }
 	      // this.geometry.colorsNeedUpdate = true;
-	      this.el.removeObject3D('mesh');
+
 	      this.LSystem.final();
 	      // finally set the merged meshes to be visible.
 	      if(this.data.mergeGeometries === true) {

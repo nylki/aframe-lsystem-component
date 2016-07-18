@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <title>A-Frame L-System Component - Animated Tree</title>
+    <script src="../libs/aframe.js"></script>
+    <script src="https://rawgit.com/ngokevin/aframe-animation-component/master/dist/aframe-animation-component.min.js"></script>
+    <script src="../libs/aframe-lsystem-component.js"></script>
+    <style media="screen">
+      body {
+        background-color: #94bfcf;
+      }
+    </style>
+  </head>
+  <body>
+    <a-scene>
+      
+      <a-assets>
+        <a-mixin id="yellow" material="color: yellow;"></a-mixin>
+        <a-mixin id="green" material="color: #528e1e;"></a-mixin>
+        <a-mixin id="brown" material="color: #877504;"></a-mixin>
+        
+        <a-mixin id="line" geometry="primitive: box; height: 0.1; width: 1; depth: 0.1" ></a-mixin>
+
+      </a-assets>
+      
+      <!-- <a-box material="color: rgb(200, 0, 0)" animation="property: material.color; direction: alternate; duration: 1000; easing: easeInSine; loop: true; to: rgb(0, 200, 0)"> </a-box> -->
+      
+      <a-entity id="lsy" scale="2 2 2" position="0 -8 -12" rotation="0 0 0" lsystem="axiom: X; productions: X:F^[F+F]F-F[--[X]F]; segmentMixins: F:brown line; angle: 20; iterations: 3; mergeGeometries:true; translateAxis: X">
+      </a-entity>
+      
+      
+</a-scene>
+<script type="text/javascript">
+let i = 20;
+  setInterval(() => {
+      i += (2)
+      document.getElementById('lsy').setAttribute('lsystem', "angle", "" + i);
+  }, 16);
+
+  // Does not work:
+  // document.getElementById('lsy').setAttribute('animation', "property: lsystem.angle; duration: 2000; easing: linear; loop: false; to: 60");
+  // }, 2000);
+</script>
+</body>
+</html>

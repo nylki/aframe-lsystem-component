@@ -194,11 +194,11 @@ AFRAME.registerComponent('lsystem', {
       console.log('log only angle changed');
       this.updateSegmentMixins();
       this.updateTurtleGraphics();
-      return;
     } else if(oldData.axiom === undefined || (oldData.axiom && oldData.axiom !== this.data.axiom) || (oldData.productions && JSON.stringify(oldData.productions) !== JSON.stringify(this.data.productions))) {
       console.log('update LSystem!');
-      this.updateSegmentMixins();
       this.updateLSystem();
+      this.updateSegmentMixins();
+      
     }
 
     

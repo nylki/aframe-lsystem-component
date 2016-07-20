@@ -263,7 +263,7 @@
 	      this.updateTurtleGraphics();
 	      
 	    } else {
-	      console.log('nothing changed in update?');
+	      // console.log('nothing changed in update?');
 	      // this.updateLSystem();
 	      // this.updateSegmentMixins();
 	    }
@@ -468,11 +468,9 @@
 	  },
 	  
 	  updateTurtleGraphics: function() {
-	    console.log('update turtle graphics');
-	      console.log(...this.mixinPromises);
-	      Promise.all([...this.mixinPromises, this.workerPromise]).then(() => {
-	      console.log('actually updating now');
-	      console.log(this.data.axiom);
+	      // console.log(...this.mixinPromises);
+	    Promise.all([...this.mixinPromises, this.workerPromise]).then(() => {
+	      // console.log('update turtle graphics graphics');
 	      this.el.removeObject3D('mesh');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      this.transformationSegment = new THREE.Object3D();

@@ -177,28 +177,51 @@ AFRAME.registerComponent('lsystem', {
     
     // TODO: Check if only angle changed or axiom or productions
     //
-    
     let self = this;
 
-    this.el.removeObject3D('mesh');
     
-    if(this.segmentElementGroupsMap !== undefined) {
+    if(this.data.mergeGeometries === false && this.segmentElementGroupsMap !== undefined) {
       for (let segmentElGroup of this.segmentElementGroupsMap.values()) {
     
         segmentElGroup.removeObject3D('mesh');
         segmentElGroup.innerHTML = '';
       }
     }
-    
-    if(oldData.angle && oldData.angle !== this.data.angle) {
-      this.updateTurtleGraphics();
-    } else if(oldData.axiom === undefined || (oldData.axiom && oldData.axiom !== this.data.axiom) || (oldData.productions && JSON.stringify(oldData.productions) !== JSON.stringify(this.data.productions))) {
-      console.log('other stuff');
-      // the following are async:
+
+    if(Object.keys(oldData).length === 0) {
+      console.log('initial update');
       this.updateLSystem();
       this.updateSegmentMixins();
+      this.updateTurtleGraphics();
       
+    } else {
+      
+      let visualChange = false;
+    
+      if((oldData.axiom && oldData.axiom !== this.data.axiom) || (oldData.iterations && oldData.iterations !== this.data.iterations) || (oldData.productions && JSON.stringify(oldData.productions) !== JSON.stringify(this.data.productions))) {
+
+        this.updateLSystem();
+        visualChange = true;
+      
+      }
+      
+      if (oldData.segmentMixins !== undefined && JSON.stringify(Array.from(oldData.segmentMixins.entries())) !== JSON.stringify(Array.from(this.data.segmentMixins.entries())) ) {
+        this.updateSegmentMixins();
+        visualChange = true;
+        
+      
+      }
+    
+     if(visualChange || oldData.angle && oldData.angle !== this.data.angle) {
+      
+      this.updateTurtleGraphics();
+      
+    } else {
+      console.log('nothing changed in update?');
+      // this.updateLSystem();
+      // this.updateSegmentMixins();
     }
+  }
 
     
     
@@ -219,7 +242,6 @@ AFRAME.registerComponent('lsystem', {
   
   initWorker: function() {
     this.worker = new LSystemWorker();
-    this.worker.onmessage = this.onWorkerUpdate.bind(this);
   },
   
   pushSegment: function(symbol) {
@@ -266,6 +288,7 @@ AFRAME.registerComponent('lsystem', {
   },
   
   updateLSystem: function () {
+    console.log('update LSystem');
     let self = this;
     
     // post params to worker
@@ -283,10 +306,22 @@ AFRAME.registerComponent('lsystem', {
     }
       
     this.worker.startTime = Date.now();
+    
+    this.workerPromise = new Promise((resolve, reject) => {
+      
+      this.worker.onmessage = (e) => {
+        console.log(e);
+        self.LSystem.setAxiom(e.data.result);
+        resolve();
+      }
+    });
+    
     this.worker.postMessage(params);
+    return this.workerPromise;
   },
   
   updateSegmentMixins: function () {
+    console.log('update mixins');
     let self = this;
     
     this.el.innerHTML = '';
@@ -387,7 +422,12 @@ AFRAME.registerComponent('lsystem', {
   },
   
   updateTurtleGraphics: function() {
-    Promise.all(this.mixinPromises).then(() => {
+    console.log('update turtle graphics');
+      console.log(...this.mixinPromises);
+      Promise.all([...this.mixinPromises, this.workerPromise]).then(() => {
+      console.log('actually updating now');
+      console.log(this.data.axiom);
+      this.el.removeObject3D('mesh');
       // The main segment used for saving transformations (rotation, translation, scale(?))
       this.transformationSegment = new THREE.Object3D();
 
@@ -448,14 +488,6 @@ AFRAME.registerComponent('lsystem', {
       
     });
   },
-  
-  
-  onWorkerUpdate: function(e) {
-		// Received updated Axiom from worker (which applied productions)
-		this.LSystem.setAxiom(e.data.result);
-		this.updateTurtleGraphics();
-	},
-
   /**
    * Called when a component is removed (e.g., via removeAttribute).
    * Generally undoes all modifications to the entity.

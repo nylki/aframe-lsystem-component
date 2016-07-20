@@ -21,7 +21,7 @@
 
       
       
-      <a-entity id="hilbertcurve" lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:green line; angle: 90.0; iterations: 3; translateAxis: X" position="-10 0 -15" rotation="0 45 0">
+      <a-entity id="hilbertcurve" lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:green line; angle: 90.0; iterations: 2; translateAxis: X" rotation="0 45 0">
       </a-entity>
 
       
@@ -29,7 +29,8 @@
       
 </a-scene>
 <script type="text/javascript">
-  document.getElementById('hilbertcurve').setAttribute('animation', "property: lsystem.angle; duration: 40000; loop: true; to: -90");
+  // doesnt work if i directly add the component above in the HTML :(
+  document.getElementById('hilbertcurve').setAttribute('animation', "property: lsystem.angle; duration: 35000; loop: true; to: 470; easing: linear;");
 </script>
 </body>
 </html>

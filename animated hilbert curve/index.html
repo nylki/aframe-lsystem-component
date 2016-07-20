@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>A-Frame L-System Component - Hilbert Curve</title>
     <script src="../libs/aframe.js"></script>
+    <script src="https://rawgit.com/ngokevin/aframe-animation-component/master/dist/aframe-animation-component.min.js"></script>
     <script src="../libs/aframe-lsystem-component.js"></script>
   </head>
   <body>
@@ -27,6 +28,8 @@
       
       
 </a-scene>
-
+<script type="text/javascript">
+  document.getElementById('hilbertcurve').setAttribute('animation', "property: lsystem.angle; duration: 40000; loop: true; to: -90");
+</script>
 </body>
 </html>

@@ -24,21 +24,30 @@
       
       <!-- <a-box material="color: rgb(200, 0, 0)" animation="property: material.color; direction: alternate; duration: 1000; easing: easeInSine; loop: true; to: rgb(0, 200, 0)"> </a-box> -->
       
-      <a-entity id="lsy" scale="2 2 2" position="0 -8 -12" rotation="0 0 0" lsystem="axiom: X; productions: X:F^[F+F]F-F[--[X]F]; segmentMixins: F:brown line; angle: 20; iterations: 3; mergeGeometries:true; translateAxis: X">
-      </a-entity>
+      
+      <!-- doesnt work: -->
+      <a-entity id="lsys" scale="2 2 2" position="0 -8 -12" rotation="0 0 0" lsystem="axiom: X; productions: X:F^[F+F]F-F[--[X]F]; segmentMixins: F:brown line; angle: 20; iterations: 3; translateAxis: X" animation="property: lsystem.angle; duration: 1000; easing: easeInSine; loop: false; to: 60.0"></a-entity>
+      
+      <!-- <a-entity id="lsy" scale="2 2 2" position="0 -8 -12" rotation="0 0 0" lsystem="axiom: X; productions: X:F^[F+F]F-F[--[X]F]; segmentMixins: F:brown line; angle: 20; iterations: 3; translateAxis: X"></a-entity> -->
+
+
       
       
 </a-scene>
 <script type="text/javascript">
-let i = 20;
-  setInterval(() => {
-      i += (2)
-      document.getElementById('lsy').setAttribute('lsystem', "angle", "" + i);
-  }, 16);
+// this works:
+//let i = 40;
+  // setInterval(() => {
+  //     i += (0.1)
+  //     document.getElementById('lsy').setAttribute('lsystem', "angle",  i);
+  //     document.getElementById('lsy').setAttribute('lsystem', "mergeGeometries", "" + true);
+  //     document.getElementById('lsy').setAttribute('rotation', "0 45 10");
+  // }, 20);
 
-  // Does not work:
-  // document.getElementById('lsy').setAttribute('animation', "property: lsystem.angle; duration: 2000; easing: linear; loop: false; to: 60");
-  // }, 2000);
+  // works also now:
+  // document.getElementById('lsy').setAttribute('animation', "property: lsystem.angle; duration: 5000; loop: false; to: 60");
+
+
 </script>
 </body>
 </html>

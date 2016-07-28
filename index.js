@@ -189,7 +189,6 @@ AFRAME.registerComponent('lsystem', {
     }
 
     if(Object.keys(oldData).length === 0) {
-      console.log('initial update');
       this.updateLSystem();
       this.updateSegmentMixins();
       this.updateTurtleGraphics();
@@ -222,10 +221,6 @@ AFRAME.registerComponent('lsystem', {
       // this.updateSegmentMixins();
     }
   }
-
-    
-    
-    
 
   },
   

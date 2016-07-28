@@ -235,7 +235,6 @@
 	    }
 
 	    if(Object.keys(oldData).length === 0) {
-	      console.log('initial update');
 	      this.updateLSystem();
 	      this.updateSegmentMixins();
 	      this.updateTurtleGraphics();
@@ -268,10 +267,6 @@
 	      // this.updateSegmentMixins();
 	    }
 	  }
-
-	    
-	    
-	    
 
 	  },
 	  

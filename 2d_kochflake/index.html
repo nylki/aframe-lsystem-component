@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame L-System Component - Hilbert Curve</title>
+    <title>A-Frame L-System Component - 2D Koch Snow Flake</title>
     <script src="../libs/aframe.js"></script>
     <script src="../libs/aframe-lsystem-component.js"></script>
   </head>
@@ -10,16 +10,18 @@
     <a-scene>
       
       <a-assets>
-        <a-mixin id="line" geometry="primitive: box; height: 0.1; width: 0.75; depth: 0.1;" material=""></a-mixin>
+        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 0.4; depth: 0.2;" material=""></a-mixin>
 
         <a-mixin id="blue" material="color: #45b5c8;"></a-mixin>
         
       </a-assets>
       <a-entity light="type: directional; color: #feffc6; intensity: 0.6" position="0.3 0 1" rotation="-30 -50 -10"></a-entity>
+      
       <a-sky color="rgb(35, 41, 55)"> </a-sky>
+      
       <a-plane color="rgb(45, 42, 35)" height="100" width="100" rotation="-90 0 0"></a-plane>
 
-      <a-entity id="hilbertcurve" lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:blue line; angle: 90.0; iterations: 4; translateAxis: X" rotation="22.5 22.5 0">
+      <a-entity id="kochflake" lsystem="axiom: F++F++F; productions: F:F-F++F-F; segmentMixins: F:blue line; angle: 60; iterations: 4; translateAxis: X" rotation="90 0 0" position="0 10 -10">
       </a-entity>
 
       

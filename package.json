@@ -35,8 +35,6 @@
   "homepage": "https://github.com/nylki/aframe-lsystem-component#readme",
   "devDependencies": {
     "aframe": "git+https://github.com/aframevr/aframe.git",
-    "browserify": "^13.0.0",
-    "browserify-css": "^0.9.1",
     "ghpages": "^0.0.8",
     "inquirer": "^1.0.2",
     "randomcolor": "^0.4.4",

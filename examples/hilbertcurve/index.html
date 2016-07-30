@@ -10,17 +10,16 @@
     <a-scene>
       
       <a-assets>
-        <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 1; depth: 0.2;" material="metalness:0.2"></a-mixin>
+        <a-mixin id="line" geometry="primitive: box; height: 0.1; width: 0.75; depth: 0.1;" material=""></a-mixin>
 
-        <a-mixin id="yellow" material="color: yellow;"></a-mixin>
-        <a-mixin id="green" material="color: #528e1e;"></a-mixin>
-        <a-mixin id="red" material="color: #8e311e;"></a-mixin>
+        <a-mixin id="blue" material="color: #45b5c8;"></a-mixin>
         
       </a-assets>
+      <a-entity light="type: directional; color: #feffc6; intensity: 0.6" position="0.3 0 1" rotation="-30 -50 -10"></a-entity>
+      <a-sky color="rgb(35, 41, 55)"> </a-sky>
+      <a-plane color="rgb(45, 42, 35)" height="100" width="100" rotation="-90 0 0"></a-plane>
 
-      
-      
-      <a-entity id="hilbertcurve" lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:green line; angle: 90.0; iterations: 3; translateAxis: X" position="-10 0 -15" rotation="0 45 0">
+      <a-entity id="hilbertcurve" lsystem="axiom: X; productions: X:^<XF^<XFX-F^>>XFX&F+>>XFX-F>X->; segmentMixins: F:blue line; angle: 90.0; iterations: 4; translateAxis: X" rotation="22.5 22.5 0">
       </a-entity>
 
       

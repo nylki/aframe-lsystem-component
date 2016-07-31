@@ -18,7 +18,7 @@ Usually you don't need to touch the following, but in some situations, you might
 
 | Property               | Description                                                                                           | Default Value |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
-| translateAxis          | (string) `'x'`, `'y'` or `'z'`, defines the axis on which to translate along when adding a segment (or moving the *turtle* via lowercase symbols of segment). Changing this to `'x'` is often necessary if you 1:1 copy examples from a textbook. | `y`        |
+| translateAxis          | (string) `'x'`, `'y'` or `'z'`, defines the axis on which to translate along when adding a segment (or moving the *turtle* via lowercase symbols of segments). Changing this to `'x'` is often necessary if you 1:1 copy examples from a textbook. | `'y'`        |
 | mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | `true`        |
 
 ### Usage

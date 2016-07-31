@@ -1,5 +1,5 @@
 {
-  "name": "aframe-LSystem-component",
+  "name": "aframe-lsystem-component",
   "version": "0.1.0",
   "description": "L-System component for A-Frame.",
   "main": "index.js",
@@ -44,6 +44,6 @@
     "worker-loader": "^0.7.0"
   },
   "dependencies": {
-    "lindenmayer": "^1.0.1"
+    "lindenmayer": "^1.2.2"
   }
 }

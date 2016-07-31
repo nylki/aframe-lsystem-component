@@ -8,7 +8,7 @@ It renders L-Systems via the *turtle graphic* technique.
 | Property               | Description                                                                                           | Default Value |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
 | axiom                  | (string) Initiator/initial string/axiom.                                                              | `'F'`           |
-| production             | (string) Productions from->to. Separate by space.                                                     | `'F:F'`       |
+| production             | (string) Productions `from`:`to`. Separate by space.                                                     | `'F:F'`       |
 | iterations             | (int) Set the initiator/initial string/axiom.                                                         | `1`          |
 | angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | `45.0`        |
 | mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | `true`        |

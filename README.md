@@ -11,9 +11,15 @@ It renders L-Systems via the *turtle graphic* technique.
 | production             | (string) Productions `from`:`to`. Separate by space.                                                     | `'F:F'`       |
 | iterations             | (int) Set the initiator/initial string/axiom.                                                         | `1`          |
 | angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | `45.0`        |
-| mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | `true`        |
 | segmentMixins          | (list) For each symbol you can define its appearance with a mixin you have defined in your `a-assets`. Eg. `F:blue line, X:big sphere`. You can also define multiple mixins per symbol ifyou plan to use `!` and `'` in your L-System to increment/decrement the color index, which directly relates to your segmentMixins. Eg. `F: red line,blue line,green line` with an Axiom `F!F!F` will produce exactly three lines with those colors.  |         |
 
+#### advanced properties
+Usually you don't need to touch the following, but in some situations, you might need or want to.
+
+| Property               | Description                                                                                           | Default Value |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
+| translateAxis          | (string) `'x'`, `'y'` or `'z'`, defines the axis on which to translate along when adding a segment (or moving the *turtle* via lowercase symbols of segment). Changing this to `'x'` is often necessary if you 1:1 copy examples from a textbook. | `y`        |
+| mergeGeometries        | (boolean) Set false if you want an Object3D per segment. Degrades rendering performance when `false`! | `true`        |
 
 ### Usage
 A very basic L-System entity could look like:

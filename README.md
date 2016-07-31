@@ -1,6 +1,3 @@
-## Under Work
-Not ready yet, ETA mid-July! :)
-
 ## aframe-lsystem-component
 
 A L-System component for [A-Frame](https://aframe.io) which use the L-System library [lindenmayer](https://github.com/nylki/lindenmayer) in the background.
@@ -89,7 +86,7 @@ Install and use by directly including the [browser files](dist):
 Install via NPM:
 
 ```bash
-npm install aframe-example-component
+npm install aframe-lsystem-component
 ```
 
 Then register and use.

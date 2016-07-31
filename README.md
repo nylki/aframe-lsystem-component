@@ -8,7 +8,7 @@ It renders L-Systems via the *turtle graphic* technique.
 | Property               | Description                                                                                           | Default Value |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- | -------       |
 | axiom                  | (string) Initiator/initial string/axiom.                                                              | `'F'`           |
-| production             | (string) Productions `from`:`to`. Separate by space.                                                     | `'F:F'`       |
+| productions             | (string) Productions `from`:`to`. Separate by space. eg: `productions: F:FF X:F+X+F`                                                    | `'F:F'`       |
 | iterations             | (int) Set the initiator/initial string/axiom.                                                         | `1`          |
 | angle                  | (number) Angle/rotation in degree to apply rotation symbols.                                          | `45.0`        |
 | segmentMixins          | (list) For each symbol you can define its appearance with a mixin you have defined in your `a-assets`. Eg. `F:blue line, X:big sphere`. You can also define multiple mixins per symbol ifyou plan to use `!` and `'` in your L-System to increment/decrement the color index, which directly relates to your segmentMixins. Eg. `F: red line,blue line,green line` with an Axiom `F!F!F` will produce exactly three lines with those colors.  |         |

@@ -1,6 +1,6 @@
 {
   "name": "aframe-lsystem-component",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "L-System component for A-Frame.",
   "main": "index.js",
   "browser": "dist/aframe-lsystem-component.min.js",

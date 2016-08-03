@@ -511,3 +511,6 @@ AFRAME.registerComponent('lsystem', {
   play: function () {
   },
 });
+
+
+require('./primitives/a-lsystem.js');

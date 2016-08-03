@@ -3,6 +3,7 @@
   "version": "0.1.2",
   "description": "L-System component for A-Frame.",
   "main": "index.js",
+  "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {
     "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe.js examples/libs/aframe.js",
     "dist": "webpack --module-bind worker-loader index.js dist/aframe-lsystem-component.js && webpack --module-bind worker-loader -p index.js dist/aframe-lsystem-component.min.js",

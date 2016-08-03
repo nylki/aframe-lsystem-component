@@ -559,6 +559,9 @@
 	});
 
 
+	__webpack_require__(4);
+
+
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
@@ -1199,6 +1202,30 @@
 	LSystem.testClassicParametricSyntax = testClassicParametricSyntax;
 
 	module.exports = LSystem;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	AFRAME.registerPrimitive('a-lsystem', {
+	  defaultComponents: {
+	    lsystem: {
+	      axiom: 'F',
+	      productions: 'F:F++F++F++F',
+	      iterations: 3,
+	      angle: 60
+	    }
+	  },
+
+	  mappings: {
+	    axiom: 'lsystem.axiom',
+	    productions: 'lsystem.productions',
+	    segmentMixins: 'lsystem.segmentMixins',
+	    iterations: 'lsystem.iterations',
+	    angle: 'lsystem.angle'
+	  }
+	});
+
 
 /***/ }
 /******/ ]);

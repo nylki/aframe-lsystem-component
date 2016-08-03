@@ -228,10 +228,17 @@ AFRAME.registerComponent('lsystem', {
   // depending on segments geometries bbox
   calculateSegmentLength: function (mixin, geometry) {
     if(this.segmentLengthMap.has(mixin)) return this.segmentLengthMap.get(mixin);
-    geometry.computeBoundingBox();
     // TODO FIXME: use proper bounding box values, depending on this.data.translateAxis
-    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x));
-    return this.segmentLengthMap.get(mixin);
+    let segmentLength;
+    if (this.data.translateAxis.equals(this.X) ) {
+      segmentLength =  Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x);
+    } else if (this.data.translateAxis.equals(this.Y)) {
+      segmentLength =  Math.abs(geometry.boundingBox.min.y - geometry.boundingBox.max.y);
+    } else if (this.data.translateAxis.equals(this.Z)) {
+      segmentLength =  Math.abs(geometry.boundingBox.min.z - geometry.boundingBox.max.z);
+    }
+    this.segmentLengthMap.set(mixin, segmentLength);
+    return segmentLength;
     
   },
   

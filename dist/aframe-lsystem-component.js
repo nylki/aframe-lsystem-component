@@ -276,7 +276,18 @@
 	    if(this.segmentLengthMap.has(mixin)) return this.segmentLengthMap.get(mixin);
 	    geometry.computeBoundingBox();
 	    // TODO FIXME: use proper bounding box values, depending on this.data.translateAxis
-	    this.segmentLengthMap.set(mixin, Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x));
+	    let segmentLength;
+	    console.log(this.data.translateAxis);
+	    console.log(this.X, this.Y, this.Z);
+	    console.log(this.data.translateAxis.equals(this.X));
+	    if (this.data.translateAxis.equals(this.X) ) {
+	      segmentLength =  Math.abs(geometry.boundingBox.min.x - geometry.boundingBox.max.x);
+	    } else if (this.data.translateAxis.equals(this.Y)) {
+	      segmentLength =  Math.abs(geometry.boundingBox.min.y - geometry.boundingBox.max.y);
+	    } else if (this.data.translateAxis.equals(this.Z)) {
+	      segmentLength =  Math.abs(geometry.boundingBox.min.z - geometry.boundingBox.max.z);
+	    }
+	    this.segmentLengthMap.set(mixin, segmentLength);
 	    return this.segmentLengthMap.get(mixin);
 	    
 	  },

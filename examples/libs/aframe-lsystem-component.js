@@ -91,13 +91,10 @@
 	        	let newCurrentIndex = value.indexOf(':', fromIndex);
 	        	let symbol = value.slice(currentIndex-1, currentIndex);
 	        	let mixinlist = value.slice(currentIndex+1, newCurrentIndex === -1 ? value.length : newCurrentIndex-1).replace(/[\[\]]/g, '').split(',');
-	          console.log(mixinlist);
 
 	        	mixinsForSymbol.set(symbol, mixinlist)
 	        	currentIndex = newCurrentIndex;
 	        }
-	        console.log('bla?');
-	        console.log(mixinsForSymbol);
 	        return mixinsForSymbol;
 	      }
 	    },
@@ -335,7 +332,6 @@
 	  },
 
 	  updateLSystem: function () {
-	    console.log('update LSystem');
 	    let self = this;
 
 	    // post params to worker
@@ -512,7 +508,6 @@
 
 	      this.LSystem.final();
 	      // finally set the merged meshes to be visible.
-	      console.log(this.mergeGroups);
 	      if(this.data.mergeGeometries === true) {
 	        for (let tuple of this.segmentElementGroupsMap) {
 	          let [symbolWithColorIndex, elGroup] = tuple;

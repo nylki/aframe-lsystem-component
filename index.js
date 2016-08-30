@@ -286,7 +286,6 @@ AFRAME.registerComponent('lsystem', {
   },
 
   updateLSystem: function () {
-    console.log('update LSystem');
     let self = this;
 
     // post params to worker

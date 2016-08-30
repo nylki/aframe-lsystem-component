@@ -67,7 +67,7 @@ AFRAME.registerComponent('lsystem', {
       default: 'y',
       parse: function(value) {
         value = value.toLowerCase();
-        if (value === 'x' ) {
+        if (value === 'x') {
           return new THREE.Vector3(1, 0, 0);
         } else if (value === 'y') {
           return new THREE.Vector3(0, 1, 0);
@@ -160,10 +160,6 @@ AFRAME.registerComponent('lsystem', {
         ']': () => { self.transformationSegment = self.stack.pop() }
       }
     });
-
-
-
-
 
   },
 
@@ -352,7 +348,7 @@ AFRAME.registerComponent('lsystem', {
 
 
     // Collect mixin info by pre-appending segment elements with their mixin
-    // Then ise the generated geometry etc.
+    // Then use the generated geometry etc.
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
 
       // Go through every symbols segmentMixins as defined by user
@@ -363,22 +359,19 @@ AFRAME.registerComponent('lsystem', {
 
         // And iterate the MixinList to buffer the segments or calculate segment lengths…
         for (let i = 0; i < mixinList.length; i++) {
-
           let mixinColorIndex = i;
           let mixin = mixinList[mixinColorIndex];
-
+          let symbol_ = symbol;
           self.mixinPromises.push(new Promise((resolve, reject) => {
             // Save mixinColorIndex for async promise below.
 
             let segmentElGroup = document.createElement('a-entity');
             segmentElGroup.setAttribute('id', mixin + '-group-' + mixinColorIndex + Math.floor(Math.random() * 10000));
 
-
             // TODO: Put it all under this.mergeData
             segmentElGroup.setAttribute('geometry', 'buffer', false);
             segmentElGroup.setAttribute('mixin', mixin);
             segmentElGroup.addEventListener('loaded', function (e) {
-
               let segmentObject = segmentElGroup.getObject3D('mesh').clone();
 
               // Make sure the geometry is actually unique
@@ -397,8 +390,7 @@ AFRAME.registerComponent('lsystem', {
 
                 let translation = self.data.translateAxis.clone().multiplyScalar((segmentLength * self.segmentLengthFactor)/2);
                 segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( translation.x, translation.y, translation.z ) );
-
-                self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
+                self.segmentObjects3DMap.set(symbol_ + mixinColorIndex, segmentObject );
 
               }
 
@@ -407,13 +399,13 @@ AFRAME.registerComponent('lsystem', {
             });
 
 
-            if(this.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
-              let previousElGroup = this.segmentElementGroupsMap.get(symbol + mixinColorIndex);
-              this.segmentElementGroupsMap.delete(symbol + mixinColorIndex);
+            if(this.segmentElementGroupsMap.has(symbol_ + mixinColorIndex)) {
+              let previousElGroup = this.segmentElementGroupsMap.get(symbol_ + mixinColorIndex);
+              this.segmentElementGroupsMap.delete(symbol_ + mixinColorIndex);
               this.el.removeChild(previousElGroup);
             }
 
-            this.segmentElementGroupsMap.set(symbol + mixinColorIndex, segmentElGroup);
+            this.segmentElementGroupsMap.set(symbol_ + mixinColorIndex, segmentElGroup);
             this.el.appendChild(segmentElGroup);
 
 

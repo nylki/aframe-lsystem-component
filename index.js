@@ -10,6 +10,14 @@ var LSystem;
 // the worker instead of importScripts().
 var LSystemWorker = require("worker?inline!./LSystemWorker.js");
 
+function stripLeadingEnding(s) {
+  let start = 0;
+  let end = s.length - 1;
+  while(/\s/g.test(s[start])) {start++}
+  while(/\s/g.test(s[end])) {end--}
+  return s.substring(start, end + 1);
+}
+
 /**
  * Lindenmayer-System component for A-Frame.
  */
@@ -44,8 +52,7 @@ AFRAME.registerComponent('lsystem', {
         	fromIndex = currentIndex+1;
         	let newCurrentIndex = value.indexOf(':', fromIndex);
         	let symbol = value.slice(currentIndex-1, currentIndex);
-        	let mixinlist = value.slice(currentIndex+1, newCurrentIndex === -1 ? value.length : newCurrentIndex-1).replace(/[\[\]]/g, '').split(',');
-
+        	let mixinlist = value.slice(currentIndex+1, newCurrentIndex === -1 ? value.length : newCurrentIndex-1).replace(/[\[\]]/g, '').split(',').map(stripLeadingEnding);
         	mixinsForSymbol.set(symbol, mixinlist)
         	currentIndex = newCurrentIndex;
         }
@@ -108,6 +115,9 @@ AFRAME.registerComponent('lsystem', {
 
     this.initWorker();
 
+    this.X = new THREE.Vector3(1, 0, 0);
+    this.Y = new THREE.Vector3(0, 1, 0);
+    this.Z = new THREE.Vector3(0, 0, 1);
     this.xPosRotation = new THREE.Quaternion();
     this.xNegRotation = new THREE.Quaternion();
     this.yPosRotation = new THREE.Quaternion();
@@ -115,9 +125,6 @@ AFRAME.registerComponent('lsystem', {
     this.zPosRotation = new THREE.Quaternion();
     this.zNegRotation = new THREE.Quaternion();
     this.yReverseRotation = new THREE.Quaternion();
-    this.X = new THREE.Vector3(1, 0, 0);
-    this.Y = new THREE.Vector3(0, 1, 0);
-    this.Z = new THREE.Vector3(0, 0, 1);
     this.xPosRotation = new THREE.Quaternion();
     this.xNegRotation = new THREE.Quaternion();
     this.yPosRotation = new THREE.Quaternion();

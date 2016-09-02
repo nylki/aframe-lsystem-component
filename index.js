@@ -256,8 +256,7 @@ AFRAME.registerComponent('lsystem', {
     let currentScale = self.transformationSegment.scale.clone();
 
     // Cap colorIndex to maximum mixins defined for the symbol.
-    let mixins = this.data.segmentMixins.get(symbol);
-    let cappedColorIndex = Math.min(this.colorIndex, mixins.length - 1);
+    let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length - 1);
 
     let mixin = this.mixinMap.get(symbol + cappedColorIndex);
 
@@ -279,6 +278,7 @@ AFRAME.registerComponent('lsystem', {
       this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 
     } else {
+      console.log(symbol);
       let segmentObject3D = this.segmentObjects3DMap.get(symbol + cappedColorIndex);
       let newSegmentObject3D = segmentObject3D.clone();
       newSegmentObject3D.quaternion.copy(currentQuaternion);
@@ -358,8 +358,8 @@ AFRAME.registerComponent('lsystem', {
     if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
 
       // Go through every symbols segmentMixins as defined by user
-      for (let segmentMixin of this.data.segmentMixins) {
-        let [symbol, mixinList] = segmentMixin;
+      for (let el of this.data.segmentMixins) {
+        let [symbol, mixinList] = el;
         // Set final functions for each symbol that has a mixin defined
         this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
 

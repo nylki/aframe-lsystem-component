@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <title>Testing experimental things</title>
+    <script src="../libs/aframe.js"></script>
+    <script src="../libs/aframe-lsystem-component.js"></script>
+    <style media="screen">
+      body {
+        background-color: #94bfcf;
+      }
+    </style>
+  </head>
+  <body>
+    <a-scene>
+      
+      <a-assets>
+        <a-mixin id="yellow" material="color: yellow;"></a-mixin>
+        <a-mixin id="green" material="color: #528e1e;"></a-mixin>
+        <a-mixin id="lightgreen" material="color: #6eb82f;"></a-mixin>
+        <a-mixin id="verylightgreen" material="color: #c2f597;"></a-mixin>
+        <a-mixin id="red" material="color: #b32d12;"></a-mixin>
+        
+        <a-mixin id="line" geometry="primitive: box; height: 1; width: 0.5; depth: 0.5;"></a-mixin>
+        <a-mixin id="sphere" geometry="primitive: sphere; radius: 0.5"></a-mixin>
+        <a-mixin id="ring" geometry="primitive: ring; radiusInner: 0.5; radiusOuter: 1"
+          material="side: double"></a-mixin>
+        
+      </a-assets>
+      
+      
+      <a-entity id="multi" lsystem="axiom: A!A!A''>B!B!B''>C!C!C; segmentMixins:
+        A:yellow line, green line, red line
+        B:yellow line, yellow sphere, yellow ring
+        C: green sphere, lightgreen sphere, verylightgreen sphere;
+        angle: 45; iterations: 0" rotation="0 45 0" position="0 2 -5">
+      </a-entity>
+      
+      
+</a-scene>
+</body>
+</html>

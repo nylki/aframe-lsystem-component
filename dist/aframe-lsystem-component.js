@@ -188,7 +188,6 @@
 	          by parsing the segment mixins. If no segment mixin for any symbol is defined
 	          it wont get a final function and therefore not render.
 	         */
-	        'F': () => {self.pushSegment.bind(self, 'F')()},
 	        '+': () => { self.transformationSegment.quaternion.multiply(self.yPosRotation)},
 	        '-': () => { self.transformationSegment.quaternion.multiply(self.yNegRotation)},
 	        '&': () => { self.transformationSegment.quaternion.multiply(self.zNegRotation)},
@@ -296,13 +295,15 @@
 	  },
 
 	  pushSegment: function(symbol) {
+
 	    let self = this;
 	    let currentQuaternion = self.transformationSegment.quaternion.clone();
 	    let currentPosition = self.transformationSegment.position.clone();
 	    let currentScale = self.transformationSegment.scale.clone();
 
 	    // Cap colorIndex to maximum mixins defined for the symbol.
-	    let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length - 1);
+	    let mixins = this.data.segmentMixins.get(symbol);
+	    let cappedColorIndex = Math.min(this.colorIndex, mixins.length - 1);
 
 	    let mixin = this.mixinMap.get(symbol + cappedColorIndex);
 
@@ -321,7 +322,6 @@
 	        newSegment.object3D.position.copy(currentPosition);
 	        newSegment.object3D.scale.copy(currentScale);
 	      });
-
 	      this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 
 	    } else {
@@ -404,8 +404,8 @@
 	    if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
 
 	      // Go through every symbols segmentMixins as defined by user
-	      for (let [symbol, mixinList] of this.data.segmentMixins) {
-
+	      for (let segmentMixin of this.data.segmentMixins) {
+	        let [symbol, mixinList] = segmentMixin;
 	        // Set final functions for each symbol that has a mixin defined
 	        this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
 
@@ -413,7 +413,7 @@
 	        for (let i = 0; i < mixinList.length; i++) {
 	          let mixinColorIndex = i;
 	          let mixin = mixinList[mixinColorIndex];
-	          let symbol_ = symbol;
+	          
 	          self.mixinPromises.push(new Promise((resolve, reject) => {
 	            // Save mixinColorIndex for async promise below.
 
@@ -442,7 +442,7 @@
 
 	                let translation = self.data.translateAxis.clone().multiplyScalar((segmentLength * self.segmentLengthFactor)/2);
 	                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( translation.x, translation.y, translation.z ) );
-	                self.segmentObjects3DMap.set(symbol_ + mixinColorIndex, segmentObject );
+	                self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
 
 	              }
 
@@ -451,13 +451,13 @@
 	            });
 
 
-	            if(this.segmentElementGroupsMap.has(symbol_ + mixinColorIndex)) {
-	              let previousElGroup = this.segmentElementGroupsMap.get(symbol_ + mixinColorIndex);
-	              this.segmentElementGroupsMap.delete(symbol_ + mixinColorIndex);
+	            if(this.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
+	              let previousElGroup = this.segmentElementGroupsMap.get(symbol + mixinColorIndex);
+	              this.segmentElementGroupsMap.delete(symbol + mixinColorIndex);
 	              this.el.removeChild(previousElGroup);
 	            }
 
-	            this.segmentElementGroupsMap.set(symbol_ + mixinColorIndex, segmentElGroup);
+	            this.segmentElementGroupsMap.set(symbol + mixinColorIndex, segmentElGroup);
 	            this.el.appendChild(segmentElGroup);
 
 

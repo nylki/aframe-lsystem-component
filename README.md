@@ -46,8 +46,8 @@ here is a list of all supported symbols and their interpretation in this compone
 - `/` rotates X around defined angles
 - `>` rotates X around defined angles
 - `|` rotates Y around defined 180 degree
-- `!` increments color index (next `segmentMixin` per symbol if defined) reduce scale by 1/3
-- `'` decrements color index (previous `segmentMixin` per symbol if defined) increase scale by 1/3
+- `!` increments segment index (next `segmentMixin` per symbol if defined). Also applies `scaleFactor` to next segments.
+- `'` decrements segment index (previous `segmentMixin` per symbol if defined). Also applies 1.0 / `scaleFactor` to next segments.
 - `[` starts branch
 - `]` ends branch
 
@@ -55,21 +55,23 @@ Besides those *turtle graphic* symbols, you define your own symbols like `F` for
 However if you want your symbol to be rendered, you need to define an entry in `segmentMixins`, like so:
 
 ```.html
-<a-entity lsystem="axiom: A; productions: A:A+B; segmentMixins: A:line,B:blue sphere"></a-entity>
+<a-entity lsystem="axiom: A; productions: A:A+B; segmentMixins: A:line B:blue sphere"></a-entity>
 ```
-Be sure that you define your [mixins](https://aframe.io/docs/0.2.0/core/mixins.html) in your `<a-assets>` at the beginning of your scene.
+Be sure that you define your [mixins](https://aframe.io/docs/0.3.0/core/mixins.html) in your `<a-assets>` at the beginning of your scene.
 A fallback geometry and material if you don't define your segmentMixins is not yet implemented, but will be soon :)
 
 
 
 It's also possible to use context sensitive productions like:
 ```.html
-<a-entity lsystem="axiom: AABC; productions: A<A>B:A+A"></a-entity>
+<a-entity lsystem="axiom: AABC; productions: A<A>B:A+A segmentMixins: A:line B:small line C:big line"></a-entity>
 ```
 
 Parametric and stochastic productions are not yet implemented in the component.
 Native JS function parsing for productions, as the backend library allows, might added to this
 component, but is not yet done.
+
+Please take a look at the examples to get an idea how to use the component. PRs are welcome! :)
 
 #### Browser Installation
 

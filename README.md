@@ -1,7 +1,7 @@
 ## aframe-lsystem-component
 
-A L-System component for [A-Frame](https://aframe.io) which use the L-System library [lindenmayer](https://github.com/nylki/lindenmayer) in the background.
-It renders L-Systems via the *turtle graphic* technique.
+A L-System component for [A-Frame](https://aframe.io) which use the L-System library [lindenmayer](https://github.com/nylki/lindenmayer) as backend.
+It renders L-Systems via the *turtle graphic* technique to create procedurally generated geometry.
 
 [![](https://cloud.githubusercontent.com/assets/1710598/18224914/273eab36-71e6-11e6-82a5-826e0f603ea1.jpg)
 ](http://nylki.github.io/aframe-lsystem-component/)

@@ -131,6 +131,10 @@
 	        }
 	      }
 	    },
+	    
+	    scaleFactor: {
+	      default: 1.0
+	    },
 
 	    dynamicSegmentLength: {
 	      default: true
@@ -179,7 +183,9 @@
 	    this.zNegRotation = new THREE.Quaternion();
 	    this.yReverseRotation = new THREE.Quaternion();
 	    this.segmentLengthFactor = 1.0;
-
+	    
+	    let scaleFactor = self.data.scaleFactor;
+	    
 	    this.LSystem = new LSystem({
 	      axiom: 'F',
 	      productions: {'F': 'F'},
@@ -198,14 +204,17 @@
 	        '>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
 	        '|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
 	        '!': () => {
-	        self.segmentLengthFactor *=(2/3);
-	        self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(2/3), self.transformationSegment.scale.y*=(2/3), self.transformationSegment.scale.z*=(2/3));
-
+	          self.segmentLengthFactor *= scaleFactor;
+	          self.transformationSegment.scale.set(
+	          self.transformationSegment.scale.x *= scaleFactor, self.transformationSegment.scale.y *= scaleFactor, self.transformationSegment.scale.z *= scaleFactor
+	        );
 	          self.colorIndex++;
 	        },
 	        '\'': () => {
-	          self.segmentLengthFactor *=(3/2);
-	          self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(3/2), self.transformationSegment.scale.y*=(3/2), self.transformationSegment.scale.z*=(3/2));
+	          self.segmentLengthFactor *= (1.0 / scaleFactor);
+	          self.transformationSegment.scale.set(
+	          self.transformationSegment.scale.x *= (1.0 / scaleFactor), self.transformationSegment.scale.y *= (1.0 / scaleFactor), self.transformationSegment.scale.z *= (1.0 / scaleFactor)
+	          );
 	          self.colorIndex = Math.max(0, self.colorIndex - 1);
 	        },
 	        '[': () => { self.stack.push(self.transformationSegment.clone()) },
@@ -302,8 +311,7 @@
 	    let currentScale = self.transformationSegment.scale.clone();
 
 	    // Cap colorIndex to maximum mixins defined for the symbol.
-	    let mixins = this.data.segmentMixins.get(symbol);
-	    let cappedColorIndex = Math.min(this.colorIndex, mixins.length - 1);
+	    let cappedColorIndex = Math.min(this.colorIndex, this.data.segmentMixins.get(symbol).length - 1);
 
 	    let mixin = this.mixinMap.get(symbol + cappedColorIndex);
 
@@ -404,8 +412,8 @@
 	    if(this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
 
 	      // Go through every symbols segmentMixins as defined by user
-	      for (let segmentMixin of this.data.segmentMixins) {
-	        let [symbol, mixinList] = segmentMixin;
+	      for (let el of this.data.segmentMixins) {
+	        let [symbol, mixinList] = el;
 	        // Set final functions for each symbol that has a mixin defined
 	        this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
 

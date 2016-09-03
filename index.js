@@ -85,6 +85,10 @@ AFRAME.registerComponent('lsystem', {
         }
       }
     },
+    
+    scaleFactor: {
+      default: 1.0
+    },
 
     dynamicSegmentLength: {
       default: true
@@ -133,7 +137,9 @@ AFRAME.registerComponent('lsystem', {
     this.zNegRotation = new THREE.Quaternion();
     this.yReverseRotation = new THREE.Quaternion();
     this.segmentLengthFactor = 1.0;
-
+    
+    let scaleFactor = self.data.scaleFactor;
+    
     this.LSystem = new LSystem({
       axiom: 'F',
       productions: {'F': 'F'},
@@ -152,14 +158,17 @@ AFRAME.registerComponent('lsystem', {
         '>': () => { self.transformationSegment.quaternion.multiply(self.xPosRotation)},
         '|': () => { self.transformationSegment.quaternion.multiply(self.yReverseRotation)},
         '!': () => {
-        self.segmentLengthFactor *=(2/3);
-        self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(2/3), self.transformationSegment.scale.y*=(2/3), self.transformationSegment.scale.z*=(2/3));
-
+          self.segmentLengthFactor *= scaleFactor;
+          self.transformationSegment.scale.set(
+          self.transformationSegment.scale.x *= scaleFactor, self.transformationSegment.scale.y *= scaleFactor, self.transformationSegment.scale.z *= scaleFactor
+        );
           self.colorIndex++;
         },
         '\'': () => {
-          self.segmentLengthFactor *=(3/2);
-          self.transformationSegment.scale.set(self.transformationSegment.scale.x*=(3/2), self.transformationSegment.scale.y*=(3/2), self.transformationSegment.scale.z*=(3/2));
+          self.segmentLengthFactor *= (1.0 / scaleFactor);
+          self.transformationSegment.scale.set(
+          self.transformationSegment.scale.x *= (1.0 / scaleFactor), self.transformationSegment.scale.y *= (1.0 / scaleFactor), self.transformationSegment.scale.z *= (1.0 / scaleFactor)
+          );
           self.colorIndex = Math.max(0, self.colorIndex - 1);
         },
         '[': () => { self.stack.push(self.transformationSegment.clone()) },
@@ -278,7 +287,6 @@ AFRAME.registerComponent('lsystem', {
       this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 
     } else {
-      console.log(symbol);
       let segmentObject3D = this.segmentObjects3DMap.get(symbol + cappedColorIndex);
       let newSegmentObject3D = segmentObject3D.clone();
       newSegmentObject3D.quaternion.copy(currentQuaternion);

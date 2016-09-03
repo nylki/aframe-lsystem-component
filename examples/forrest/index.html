@@ -45,7 +45,12 @@
 
     // We can use template strings (``) to allow expressions (${}), useful for random
     // angle or iterations
-    tree.setAttribute('lsystem', `axiom: F!F!X; productions: X:FX[+!XF'][--!F+/X'][&!FXFX!F''][^!FX!F'']; segmentMixins: F:brown line,brown line,brown line,brown line,green line,green line,green line,yellow flower; angle: ${getRandom(15, 35)}; iterations: ${getRandomInt(1, 4)}; mergeGeometries:true`);
+    tree.setAttribute('lsystem',
+    `axiom: F!F!X; productions: X:FX[+!XF'][--!F+/X'][&!FX>FX!F''][^!FX!F''];
+    segmentMixins: F:brown line, brown line, brown line, brown line, green line, green line, green line, yellow flower;
+    scaleFactor: ${getRandom(50, 70) / 100};
+    angle: ${getRandom(15, 35)};
+    iterations: ${getRandomInt(1, 4)};`);
     
     trees.appendChild(tree);
   }

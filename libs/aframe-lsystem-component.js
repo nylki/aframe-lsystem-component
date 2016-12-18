@@ -272,7 +272,6 @@
 	        for (var _iterator = this.segmentElementGroupsMap.values()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 	          var segmentElGroup = _step.value;
 
-
 	          segmentElGroup.removeObject3D('mesh');
 	          segmentElGroup.innerHTML = '';
 	        }
@@ -580,8 +579,6 @@
 
 	    // console.log(...this.mixinPromises);
 	    Promise.all([].concat(_toConsumableArray(this.mixinPromises), [this.workerPromise])).then(function () {
-	      // console.log('update turtle graphics graphics');
-	      _this4.el.removeObject3D('mesh');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      _this4.transformationSegment = new THREE.Object3D();
 

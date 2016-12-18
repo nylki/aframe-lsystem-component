@@ -394,7 +394,7 @@ AFRAME.registerComponent('lsystem', {
               segmentElGroup.getObject3D('mesh').geometry.dispose();
               segmentObject.geometry = (segmentObject.geometry.clone());
 
-              segmentLength = self.calculateSegmentLength(mixin, segmentObject.geometry);
+              let segmentLength = self.calculateSegmentLength(mixin, segmentObject.geometry);
 
               // Do some additional stuff like buffering 3D objects / geometry
               // if we want to merge geometries.

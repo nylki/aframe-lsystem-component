@@ -1,11 +1,11 @@
 {
   "name": "aframe-lsystem-component",
-  "version": "0.1.10",
-  "description": "L-System/LSystem component for A-Frame. Using Lindenmayer as backend.",
+  "version": "0.1.11",
+  "description": "L-System/LSystem component for A-Frame to draw 3D turtle graphics. Using Lindenmayer as backend.",
   "main": "index.js",
   "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {
-    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe.min.js examples/libs/aframe.js",
+    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-v0.4.0.min.js examples/libs/aframe.js",
     "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.esnext.js --module-bind worker-loader && cp dist/aframe-lsystem-component.js dist/aframe-lsystem-component.min.js",
     "postpublish": "npm run dist",
     "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",

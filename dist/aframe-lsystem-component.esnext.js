@@ -239,7 +239,6 @@
 
 	    if(this.data.mergeGeometries === false && this.segmentElementGroupsMap !== undefined) {
 	      for (let segmentElGroup of this.segmentElementGroupsMap.values()) {
-
 	        segmentElGroup.removeObject3D('mesh');
 	        segmentElGroup.innerHTML = '';
 	      }
@@ -479,7 +478,7 @@
 	      // console.log(...this.mixinPromises);
 	    Promise.all([...this.mixinPromises, this.workerPromise]).then(() => {
 	      // console.log('update turtle graphics graphics');
-	      this.el.removeObject3D('mesh');
+	    //  this.el.removeObject3D('mesh');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      this.transformationSegment = new THREE.Object3D();
 

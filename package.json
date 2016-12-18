@@ -1,7 +1,7 @@
 {
   "name": "aframe-lsystem-component",
-  "version": "0.1.9",
-  "description": "L-System component for A-Frame.",
+  "version": "0.1.10",
+  "description": "L-System/LSystem component for A-Frame. Using Lindenmayer as backend.",
   "main": "index.js",
   "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {

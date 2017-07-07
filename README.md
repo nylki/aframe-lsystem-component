@@ -91,7 +91,7 @@ Install and use by directly including the [browser files](dist):
   <a-scene>
   
    <a-assets>
-     <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 0.4; depth: 0.2;" material=""></a-mixin>
+     <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 0.4; depth: 0.2;"></a-mixin>
      <a-mixin id="blue" material="color: #45b5c8;"></a-mixin>
    </a-assets>
     

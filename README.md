@@ -89,7 +89,14 @@ Install and use by directly including the [browser files](dist):
 
 <body>
   <a-scene>
-    <a-entity lsystem="axiom: F+F; productions: F:F-F++F"></a-entity>
+  
+   <a-assets>
+     <a-mixin id="line" geometry="primitive: box; height: 0.2; width: 0.4; depth: 0.2;" material=""></a-mixin>
+     <a-mixin id="blue" material="color: #45b5c8;"></a-mixin>
+   </a-assets>
+    
+    <a-entity lsystem="axiom: F+F; productions: F:F-F++F" segmentMixins: F:blue line></a-entity>
+    
   </a-scene>
 </body>
 ```

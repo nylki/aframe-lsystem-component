@@ -62,21 +62,21 @@
 	// the worker instead of importScripts().
 	var LSystemWorker = __webpack_require__(1);
 
-	function stripLeadingEnding(s) {
-	  var start = 0;
-	  var end = s.length - 1;
-	  while (/\s/g.test(s[start])) {
-	    start++;
-	  }
-	  while (/\s/g.test(s[end])) {
-	    end--;
-	  }
-	  return s.substring(start, end + 1);
-	}
-
 	/**
 	 * Lindenmayer-System component for A-Frame.
 	 */
+
+	function parseFromTo(value, whiteSpaceReplaceFunc) {
+	  var flatResult = value.split(/(\w)\s*:\s*/).filter(function (part) {
+	    return part.length !== 0;
+	  });
+	  var result = [];
+	  for (var i = 0; i < flatResult.length; i += 2) {
+	    result.push([flatResult[i], flatResult[i + 1]]);
+	  }
+	  return result;
+	}
+
 	AFRAME.registerComponent('lsystem', {
 	  schema: {
 
@@ -89,29 +89,51 @@
 	      default: 'F:FF',
 	      // return an array of production tuples ([[from, to], ['F', 'F+F']])
 	      parse: function parse(value) {
-	        return value.split(' ').map(function (splitValue) {
-	          return splitValue.split(':');
+	        return parseFromTo(value).map(function (_ref) {
+	          var _ref2 = _slicedToArray(_ref, 2),
+	              from = _ref2[0],
+	              to = _ref2[1];
+
+	          return [from, to.replace(/\s/g, '')];
 	        });
 	      }
 	    },
 
-	    // A: [blue line, red line, yellow line] B: red line
-
+	    // A: blue line, red line, yellow line B: red line
 	    segmentMixins: {
 	      type: 'string',
 	      parse: function parse(value) {
 
-	        var fromIndex = 0;
-	        var currentIndex = value.indexOf(':', fromIndex);
 	        var mixinsForSymbol = new Map();
-	        while (currentIndex !== -1) {
-	          fromIndex = currentIndex + 1;
-	          var newCurrentIndex = value.indexOf(':', fromIndex);
-	          var symbol = value.slice(currentIndex - 1, currentIndex);
-	          var mixinlist = value.slice(currentIndex + 1, newCurrentIndex === -1 ? value.length : newCurrentIndex - 1).replace(/[\[\]]/g, '').split(',').map(stripLeadingEnding);
-	          mixinsForSymbol.set(symbol, mixinlist);
-	          currentIndex = newCurrentIndex;
+	        var result = parseFromTo(value);
+	        var _iteratorNormalCompletion = true;
+	        var _didIteratorError = false;
+	        var _iteratorError = undefined;
+
+	        try {
+	          for (var _iterator = result[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	            var _step$value = _slicedToArray(_step.value, 2),
+	                from = _step$value[0],
+	                to = _step$value[1];
+
+	            to = to.replace(/[\[\]]/g, '').split(',');
+	            mixinsForSymbol.set(from, to);
+	          }
+	        } catch (err) {
+	          _didIteratorError = true;
+	          _iteratorError = err;
+	        } finally {
+	          try {
+	            if (!_iteratorNormalCompletion && _iterator.return) {
+	              _iterator.return();
+	            }
+	          } finally {
+	            if (_didIteratorError) {
+	              throw _iteratorError;
+	            }
+	          }
 	        }
+
 	        return mixinsForSymbol;
 	      }
 	    },
@@ -196,6 +218,10 @@
 
 	    var scaleFactor = self.data.scaleFactor;
 
+	    this.colorIndex = 0;
+	    this.lineWidth = 0.0005;
+	    this.lineLength = 0.125;
+
 	    this.LSystem = new LSystem({
 	      axiom: 'F',
 	      productions: { 'F': 'F' },
@@ -264,28 +290,28 @@
 	    var self = this;
 
 	    if (this.data.mergeGeometries === false && this.segmentElementGroupsMap !== undefined) {
-	      var _iteratorNormalCompletion = true;
-	      var _didIteratorError = false;
-	      var _iteratorError = undefined;
+	      var _iteratorNormalCompletion2 = true;
+	      var _didIteratorError2 = false;
+	      var _iteratorError2 = undefined;
 
 	      try {
-	        for (var _iterator = this.segmentElementGroupsMap.values()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	          var segmentElGroup = _step.value;
+	        for (var _iterator2 = this.segmentElementGroupsMap.values()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	          var segmentElGroup = _step2.value;
 
 	          segmentElGroup.removeObject3D('mesh');
 	          segmentElGroup.innerHTML = '';
 	        }
 	      } catch (err) {
-	        _didIteratorError = true;
-	        _iteratorError = err;
+	        _didIteratorError2 = true;
+	        _iteratorError2 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion && _iterator.return) {
-	            _iterator.return();
+	          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	            _iterator2.return();
 	          }
 	        } finally {
-	          if (_didIteratorError) {
-	            throw _iteratorError;
+	          if (_didIteratorError2) {
+	            throw _iteratorError2;
 	          }
 	        }
 	      }
@@ -370,7 +396,7 @@
 	          newSegment.object3D.quaternion.copy(currentQuaternion);
 	          newSegment.object3D.position.copy(currentPosition);
 	          newSegment.object3D.scale.copy(currentScale);
-	        });
+	        }, { once: true });
 	        _this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 	      })();
 	    } else {
@@ -411,7 +437,6 @@
 	    this.workerPromise = new Promise(function (resolve, reject) {
 
 	      _this2.worker.onmessage = function (e) {
-	        console.log(e);
 	        self.LSystem.setAxiom(e.data.result);
 	        resolve();
 	      };
@@ -424,7 +449,6 @@
 	  updateSegmentMixins: function updateSegmentMixins() {
 	    var _this3 = this;
 
-	    console.log('update mixins');
 	    var self = this;
 
 	    this.el.innerHTML = '';
@@ -434,15 +458,15 @@
 
 	    this.mixinMap = new Map();
 	    // Construct a map with keys = `symbol + colorIndex` from data.segmentMixins
-	    var _iteratorNormalCompletion2 = true;
-	    var _didIteratorError2 = false;
-	    var _iteratorError2 = undefined;
+	    var _iteratorNormalCompletion3 = true;
+	    var _didIteratorError3 = false;
+	    var _iteratorError3 = undefined;
 
 	    try {
-	      for (var _iterator2 = this.data.segmentMixins[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	        var _step2$value = _slicedToArray(_step2.value, 2),
-	            _symbol = _step2$value[0],
-	            _mixinList = _step2$value[1];
+	      for (var _iterator3 = this.data.segmentMixins[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	        var _step3$value = _slicedToArray(_step3.value, 2),
+	            _symbol = _step3$value[0],
+	            _mixinList = _step3$value[1];
 
 	        for (var i = 0; i < _mixinList.length; i++) {
 	          this.mixinMap.set(_symbol + i, _mixinList[i]);
@@ -453,16 +477,16 @@
 	      // when merging geometries ourselves and not by appending a `mixin` attributes,
 	      // as done with `mergeGeometry = false`.
 	    } catch (err) {
-	      _didIteratorError2 = true;
-	      _iteratorError2 = err;
+	      _didIteratorError3 = true;
+	      _iteratorError3 = err;
 	    } finally {
 	      try {
-	        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-	          _iterator2.return();
+	        if (!_iteratorNormalCompletion3 && _iterator3.return) {
+	          _iterator3.return();
 	        }
 	      } finally {
-	        if (_didIteratorError2) {
-	          throw _iteratorError2;
+	        if (_didIteratorError3) {
+	          throw _iteratorError3;
 	        }
 	      }
 	    }
@@ -479,13 +503,13 @@
 	    if (this.data.segmentMixins && this.data.segmentMixins.length !== 0) {
 
 	      // Go through every symbols segmentMixins as defined by user
-	      var _iteratorNormalCompletion3 = true;
-	      var _didIteratorError3 = false;
-	      var _iteratorError3 = undefined;
+	      var _iteratorNormalCompletion4 = true;
+	      var _didIteratorError4 = false;
+	      var _iteratorError4 = undefined;
 
 	      try {
 	        var _loop = function _loop() {
-	          var el = _step3.value;
+	          var el = _step4.value;
 
 	          var _el = _slicedToArray(el, 2),
 	              symbol = _el[0],
@@ -518,6 +542,7 @@
 	                // Make sure the geometry is actually unique
 	                // AFrame sets the same geometry for multiple entities. As we modify
 	                // the geometry per entity we need to have unique geometry instances.
+	                // TODO: hm, maybe try to use instanced geometry and offset on object?
 	                segmentElGroup.getObject3D('mesh').geometry.dispose();
 	                segmentObject.geometry = segmentObject.geometry.clone();
 
@@ -528,15 +553,22 @@
 	                if (self.data.mergeGeometries === true) {
 
 	                  // Offset geometry by half segmentLength to get the rotation point right.
-
 	                  var translation = self.data.translateAxis.clone().multiplyScalar(segmentLength * self.segmentLengthFactor / 2);
-	                  segmentObject.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(translation.x, translation.y, translation.z));
+
+	                  // IMPORTANT!!!
+	                  // TODO: Try to use pivot object instead of translating geometry
+	                  // this may help in reusing geometry and not needing to clone it (see above)?
+	                  // see: https://github.com/mrdoob/three.js/issues/1364
+	                  //and
+	                  // see: http://stackoverflow.com/questions/28848863/threejs-how-to-rotate-around-objects-own-center-instead-of-world-center
+	                  segmentObject.geometry.translate(translation.x, translation.y, translation.z);
+
 	                  self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject);
 	                }
 
 	                segmentElGroup.removeObject3D('mesh');
 	                resolve();
-	              });
+	              }, { once: true });
 
 	              if (_this3.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
 	                var previousElGroup = _this3.segmentElementGroupsMap.get(symbol + mixinColorIndex);
@@ -554,20 +586,20 @@
 	          }
 	        };
 
-	        for (var _iterator3 = this.data.segmentMixins[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	        for (var _iterator4 = this.data.segmentMixins[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 	          _loop();
 	        }
 	      } catch (err) {
-	        _didIteratorError3 = true;
-	        _iteratorError3 = err;
+	        _didIteratorError4 = true;
+	        _iteratorError4 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion3 && _iterator3.return) {
-	            _iterator3.return();
+	          if (!_iteratorNormalCompletion4 && _iterator4.return) {
+	            _iterator4.return();
 	          }
 	        } finally {
-	          if (_didIteratorError3) {
-	            throw _iteratorError3;
+	          if (_didIteratorError4) {
+	            throw _iteratorError4;
 	          }
 	        }
 	      }
@@ -579,45 +611,39 @@
 
 	    // console.log(...this.mixinPromises);
 	    Promise.all([].concat(_toConsumableArray(this.mixinPromises), [this.workerPromise])).then(function () {
-	      // console.log('update turtle graphics graphics');
-	      //  this.el.removeObject3D('mesh');
 	      // The main segment used for saving transformations (rotation, translation, scale(?))
 	      _this4.transformationSegment = new THREE.Object3D();
 
 	      // set merge groups
 	      if (_this4.data.mergeGeometries === true) {
-	        var _iteratorNormalCompletion4 = true;
-	        var _didIteratorError4 = false;
-	        var _iteratorError4 = undefined;
+	        var _iteratorNormalCompletion5 = true;
+	        var _didIteratorError5 = false;
+	        var _iteratorError5 = undefined;
 
 	        try {
-	          for (var _iterator4 = _this4.segmentObjects3DMap[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-	            var _step4$value = _slicedToArray(_step4.value, 2),
-	                _id = _step4$value[0],
-	                _segmentObject = _step4$value[1];
+	          for (var _iterator5 = _this4.segmentObjects3DMap[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+	            var _step5$value = _slicedToArray(_step5.value, 2),
+	                _id = _step5$value[0],
+	                _segmentObject = _step5$value[1];
 
 	            _this4.mergeGroups.set(_id, new THREE.Mesh(new THREE.Geometry(), _segmentObject.material));
 	          }
 	        } catch (err) {
-	          _didIteratorError4 = true;
-	          _iteratorError4 = err;
+	          _didIteratorError5 = true;
+	          _iteratorError5 = err;
 	        } finally {
 	          try {
-	            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-	              _iterator4.return();
+	            if (!_iteratorNormalCompletion5 && _iterator5.return) {
+	              _iterator5.return();
 	            }
 	          } finally {
-	            if (_didIteratorError4) {
-	              throw _iteratorError4;
+	            if (_didIteratorError5) {
+	              throw _iteratorError5;
 	            }
 	          }
 	        }
 	      } // We push copies of this.transformationSegment on branch symbols inside this array.
 	      _this4.stack = [];
-
-	      _this4.colorIndex = 0;
-	      _this4.lineWidth = 0.0005;
-	      _this4.lineLength = 0.125;
 
 	      var angle = _this4.data.angle;
 
@@ -643,13 +669,13 @@
 	      _this4.LSystem.final();
 	      // finally set the merged meshes to be visible.
 	      if (_this4.data.mergeGeometries === true) {
-	        var _iteratorNormalCompletion5 = true;
-	        var _didIteratorError5 = false;
-	        var _iteratorError5 = undefined;
+	        var _iteratorNormalCompletion6 = true;
+	        var _didIteratorError6 = false;
+	        var _iteratorError6 = undefined;
 
 	        try {
-	          for (var _iterator5 = _this4.segmentElementGroupsMap[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-	            var tuple = _step5.value;
+	          for (var _iterator6 = _this4.segmentElementGroupsMap[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+	            var tuple = _step6.value;
 
 	            var _tuple = _slicedToArray(tuple, 2),
 	                symbolWithColorIndex = _tuple[0],
@@ -665,16 +691,16 @@
 	            }
 	          }
 	        } catch (err) {
-	          _didIteratorError5 = true;
-	          _iteratorError5 = err;
+	          _didIteratorError6 = true;
+	          _iteratorError6 = err;
 	        } finally {
 	          try {
-	            if (!_iteratorNormalCompletion5 && _iterator5.return) {
-	              _iterator5.return();
+	            if (!_iteratorNormalCompletion6 && _iterator6.return) {
+	              _iterator6.return();
 	            }
 	          } finally {
-	            if (_didIteratorError5) {
-	              throw _iteratorError5;
+	            if (_didIteratorError6) {
+	              throw _iteratorError6;
 	            }
 	          }
 	        }
@@ -715,7 +741,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function() {
-		return __webpack_require__(2)("/******/ (function(modules) { // webpackBootstrap\n/******/ \t// The module cache\n/******/ \tvar installedModules = {};\n\n/******/ \t// The require function\n/******/ \tfunction __webpack_require__(moduleId) {\n\n/******/ \t\t// Check if module is in cache\n/******/ \t\tif(installedModules[moduleId])\n/******/ \t\t\treturn installedModules[moduleId].exports;\n\n/******/ \t\t// Create a new module (and put it into the cache)\n/******/ \t\tvar module = installedModules[moduleId] = {\n/******/ \t\t\texports: {},\n/******/ \t\t\tid: moduleId,\n/******/ \t\t\tloaded: false\n/******/ \t\t};\n\n/******/ \t\t// Execute the module function\n/******/ \t\tmodules[moduleId].call(module.exports, module, module.exports, __webpack_require__);\n\n/******/ \t\t// Flag the module as loaded\n/******/ \t\tmodule.loaded = true;\n\n/******/ \t\t// Return the exports of the module\n/******/ \t\treturn module.exports;\n/******/ \t}\n\n\n/******/ \t// expose the modules object (__webpack_modules__)\n/******/ \t__webpack_require__.m = modules;\n\n/******/ \t// expose the module cache\n/******/ \t__webpack_require__.c = installedModules;\n\n/******/ \t// __webpack_public_path__\n/******/ \t__webpack_require__.p = \"\";\n\n/******/ \t// Load entry module and return exports\n/******/ \treturn __webpack_require__(0);\n/******/ })\n/************************************************************************/\n/******/ ([\n/* 0 */\n/***/ function(module, exports, __webpack_require__) {\n\n\t'use strict';\n\n\t// Require instead of importScripts because we use webpack\n\t// with worker-loader for compiling source: https://github.com/webpack/worker-loader\n\tvar LSystem = __webpack_require__(1);\n\tvar lsystem = new LSystem({});\n\tvar timeout = {};\n\n\tonmessage = function onmessage(e) {\n\t  // wait a few ms to start thread, to be able to cancel old tasks\n\t  clearTimeout(timeout);\n\t  timeout = setTimeout(function () {\n\n\t    lsystem.setAxiom(e.data.axiom);\n\n\t    lsystem.clearProductions();\n\t    var _iteratorNormalCompletion = true;\n\t    var _didIteratorError = false;\n\t    var _iteratorError = undefined;\n\n\t    try {\n\t      for (var _iterator = e.data.productions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {\n\t        var p = _step.value;\n\n\t        lsystem.setProduction(p[0], p[1]);\n\t      }\n\t    } catch (err) {\n\t      _didIteratorError = true;\n\t      _iteratorError = err;\n\t    } finally {\n\t      try {\n\t        if (!_iteratorNormalCompletion && _iterator.return) {\n\t          _iterator.return();\n\t        }\n\t      } finally {\n\t        if (_didIteratorError) {\n\t          throw _iteratorError;\n\t        }\n\t      }\n\t    }\n\n\t    lsystem.iterate(e.data.iterations);\n\n\t    postMessage({\n\t      result: lsystem.getString(),\n\t      initial: e.data\n\t    });\n\t  }, 20);\n\t};\n\n/***/ },\n/* 1 */\n/***/ function(module, exports) {\n\n\t'use strict';\n\n\t// Get a list of productions that have identical initiators,\n\t// Output a single stochastic production. Probability per production\n\t// is defined by amount of input productions (4 => 25% each, 2 => 50% etc.)\n\n\tfunction transformClassicStochasticProductions(productions) {\n\n\t  return function transformedProduction() {\n\t    var resultList = productions; // the parser for productions shall create this list\n\t    var count = resultList.length;\n\n\t    var r = Math.random();\n\t    for (var i = 0; i < count; i++) {\n\t      var range = (i + 1) / count;\n\t      if (r <= range) return resultList[i];\n\t    }\n\n\t    console.error('Should have returned a result of the list, something is wrong here with the random numbers?.');\n\t  };\n\t};\n\n\t// TODO: Scaffold classic parametric and context sensitive stuff out of main file\n\t// And simply require it here, eg:\n\t// this.testClassicParametricSyntax = require(classicSyntax.testParametric)??\n\tfunction testClassicParametricSyntax(axiom) {\n\t  return (/\\(.+\\)/.test(axiom)\n\t  );\n\t};\n\n\t// transforms things like 'A(1,2,5)B(2.5)' to\n\t// [ {symbol: 'A', params: [1,2,5]}, {symbol: 'B', params:[25]} ]\n\t// strips spaces\n\tfunction transformClassicParametricAxiom(axiom) {\n\n\t  // Replace whitespaces, then split between square brackets.\n\t  var splitAxiom = axiom.replace(/\\s+/g, '').split(/[\\(\\)]/);\n\t  // console.log('parts:', splitAxiom)\n\t  var newAxiom = [];\n\t  // Construct new axiom by getting the params and symbol.\n\t  for (var i = 0; i < splitAxiom.length - 1; i += 2) {\n\t    var params = splitAxiom[i + 1].split(',').map(Number);\n\t    newAxiom.push({ symbol: splitAxiom[i], params: params });\n\t  }\n\t  // console.log('parsed axiom:', newAxiom)\n\t};\n\n\t// transform a classic syntax production into valid JS production\n\t// TODO: Only work on first part pf production P[0]\n\t// -> this.transformClassicCSCondition\n\tfunction transformClassicCSProduction(p, ignoredSymbols) {\n\t  var _this = this;\n\n\t  // before continuing, check if classic syntax actually there\n\t  // example: p = ['A<B>C', 'Z']\n\n\t  // left should be ['A', 'B']\n\t  var left = p[0].match(/(.+)<(.)/);\n\n\t  // right should be ['B', 'C']\n\t  var right = p[0].match(/(.)>(.+)/);\n\n\t  // Not a CS-Production (no '<' or '>'),\n\t  //return original production.\n\t  if (left === null && right === null) {\n\t    return p;\n\t  }\n\n\t  // indexSymbol should be 'B' in A<B>C\n\t  // get it either from left side or right side if left is nonexistent\n\t  var indexSymbol = left !== null ? left[2] : right[1];\n\n\t  // double check: make sure that the right and left match got the same indexSymbol (B)\n\t  if (left !== null && right !== null && left[2] !== right[1]) {\n\t    throw new Error('index symbol differs in context sensitive production from left to right check.', left[2], '!==', right[1]);\n\t  }\n\n\t  // finally build the new (valid JS) production\n\t  // (that is being executed instead of the classic syntax,\n\t  //  which can't be interpreted by the JS engine)\n\t  var transformedFunction = function transformedFunction(_ref) {\n\t    var _index = _ref.index;\n\t    var _part = _ref.part;\n\t    var _axiom = _ref.currentAxiom;\n\t    var _params = _ref.params;\n\n\n\t    var leftMatch = { result: true };\n\t    var rightMatch = { result: true };\n\n\t    // this can possibly be optimized (see: https://developers.google.com/speed/articles/optimizing-javascript#avoiding-pitfalls-with-closures)\n\t    //\n\n\t    if (left !== null) {\n\t      leftMatch = _this.match({ direction: 'left', match: left[1], index: _index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols });\n\t    }\n\n\t    // don't match with right side if left already false or no right match necessary\n\t    if (leftMatch.result === false || leftMatch.result === true && right === null) return leftMatch.result ? p[1] : false;\n\n\t    // see left!== null. could be optimized. Creating 3 variations of function\n\t    // so left/right are not checked here, which improves speed, as left/right\n\t    // are in a scope above.\n\t    if (right !== null) {\n\t      rightMatch = _this.match({ direction: 'right', match: right[2], index: _index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols });\n\t    }\n\n\t    // Match! On a match return either the result of given production function\n\t    // or simply return the symbol itself if its no function.\n\t    if (leftMatch.result && rightMatch.result) {\n\t      return typeof p[1] === 'function' ? p[1]({ index: _index, part: _part, currentAxiom: _axiom, params: _params, leftMatchIndices: leftMatch.matchIndices, rightMatchIndices: rightMatch.matchIndices, ignoredSymbols: ignoredSymbols }) : p[1];\n\t    } else {\n\t      return false;\n\t    }\n\t  };\n\n\t  var transformedProduction = [indexSymbol, transformedFunction];\n\n\t  return transformedProduction;\n\t};\n\n\tvar _typeof = typeof Symbol === \"function\" && typeof Symbol.iterator === \"symbol\" ? function (obj) {\n\t  return typeof obj;\n\t} : function (obj) {\n\t  return obj && typeof Symbol === \"function\" && obj.constructor === Symbol ? \"symbol\" : typeof obj;\n\t};\n\n\tvar slicedToArray = function () {\n\t  function sliceIterator(arr, i) {\n\t    var _arr = [];\n\t    var _n = true;\n\t    var _d = false;\n\t    var _e = undefined;\n\n\t    try {\n\t      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {\n\t        _arr.push(_s.value);\n\n\t        if (i && _arr.length === i) break;\n\t      }\n\t    } catch (err) {\n\t      _d = true;\n\t      _e = err;\n\t    } finally {\n\t      try {\n\t        if (!_n && _i[\"return\"]) _i[\"return\"]();\n\t      } finally {\n\t        if (_d) throw _e;\n\t      }\n\t    }\n\n\t    return _arr;\n\t  }\n\n\t  return function (arr, i) {\n\t    if (Array.isArray(arr)) {\n\t      return arr;\n\t    } else if (Symbol.iterator in Object(arr)) {\n\t      return sliceIterator(arr, i);\n\t    } else {\n\t      throw new TypeError(\"Invalid attempt to destructure non-iterable instance\");\n\t    }\n\t  };\n\t}();\n\n\tfunction LSystem(_ref) {\n\t\tvar axiom = _ref.axiom;\n\t\tvar productions = _ref.productions;\n\t\tvar finals = _ref.finals;\n\t\tvar branchSymbols = _ref.branchSymbols;\n\t\tvar ignoredSymbols = _ref.ignoredSymbols;\n\t\tvar classicParametricSyntax = _ref.classicParametricSyntax;\n\n\t\t// faking default values until better support lands in all browser\n\t\taxiom = typeof axiom !== 'undefined' ? axiom : '';\n\t\tbranchSymbols = typeof branchSymbols !== 'undefined' ? branchSymbols : \"\";\n\t\tignoredSymbols = typeof ignoredSymbols !== 'undefined' ? ignoredSymbols : \"\";\n\t\tclassicParametricSyntax = typeof classicParametricSyntax !== 'undefined' ? classicParametricSyntax : 'false';\n\n\t\t// if using objects in axioms, as used in parametric L-Systems\n\t\tthis.getString = function () {\n\t\t\tvar onlySymbols = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];\n\n\t\t\tif (typeof this.axiom === 'string') return this.axiom;\n\t\t\tif (onlySymbols === true) {\n\t\t\t\treturn this.axiom.reduce(function (prev, current) {\n\t\t\t\t\tif (current.symbol === undefined) {\n\t\t\t\t\t\tconsole.log('found:', current);\n\t\t\t\t\t\tthrow new Error('L-Systems that use only objects as symbols (eg: {symbol: \\'F\\', params: []}), cant use string symbols (eg. \\'F\\')! Check if you always return objects in your productions and no strings.');\n\t\t\t\t\t}\n\t\t\t\t\treturn prev + current.symbol;\n\t\t\t\t}, '');\n\t\t\t} else {\n\t\t\t\treturn JSON.stringify(this.axiom);\n\t\t\t}\n\t\t};\n\n\t\tthis.setAxiom = function (axiom) {\n\t\t\tthis.axiom = axiom;\n\t\t};\n\n\t\tthis.setProduction = function (A, B) {\n\t\t\tvar doAppend = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];\n\n\t\t\tvar newProduction = [A, B];\n\t\t\tif (newProduction === undefined) throw new Error('no production specified.');\n\n\t\t\tif (this.parameters.allowClassicSyntax === true) {\n\t\t\t\tnewProduction = transformClassicCSProduction.bind(this)(newProduction, this.ignoredSymbols);\n\t\t\t}\n\t\t\tvar symbol = newProduction[0];\n\n\t\t\tif (doAppend === true && this.productions.has(symbol)) {\n\n\t\t\t\tvar existingProduction = this.productions.get(symbol);\n\t\t\t\t// If existing production results already in an array use this, otherwise\n\t\t\t\t// create new array to append to.\n\t\t\t\tvar productionList = existingProduction[Symbol.iterator] !== undefined && typeof existingProduction !== 'string' && !(existingProduction instanceof String) ? this.productions.get(symbol) : [this.productions.get(symbol)];\n\t\t\t\tproductionList.push(newProduction[1]);\n\t\t\t\tthis.productions.set(symbol, productionList);\n\t\t\t} else {\n\t\t\t\tthis.productions.set(newProduction[0], newProduction[1]);\n\t\t\t}\n\t\t};\n\n\t\t// set multiple productions from name:value Object\n\t\tthis.setProductions = function (newProductions) {\n\t\t\tif (newProductions === undefined) throw new Error('no production specified.');\n\t\t\tthis.clearProductions();\n\n\t\t\t// TODO: once Object.entries() (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries) is stable, use that in combo instead of awkward for…in.\n\t\t\tfor (var condition in newProductions) {\n\t\t\t\tif (newProductions.hasOwnProperty(condition)) {\n\t\t\t\t\tthis.setProduction(condition, newProductions[condition], true);\n\t\t\t\t}\n\t\t\t}\n\t\t};\n\n\t\tthis.clearProductions = function () {\n\t\t\tthis.productions = new Map();\n\t\t};\n\n\t\tthis.setFinal = function (symbol, final) {\n\t\t\tvar newFinal = [symbol, final];\n\t\t\tif (newFinal === undefined) {\n\t\t\t\tthrow new Error('no final specified.');\n\t\t\t}\n\t\t\tthis.finals.set(newFinal[0], newFinal[1]);\n\t\t};\n\n\t\t// set multiple finals from name:value Object\n\t\tthis.setFinals = function (newFinals) {\n\t\t\tif (newFinals === undefined) throw new Error('no finals specified.');\n\t\t\tthis.finals = new Map();\n\t\t\tfor (var symbol in newFinals) {\n\t\t\t\tif (newFinals.hasOwnProperty(symbol)) {\n\t\t\t\t\tthis.setFinal(symbol, newFinals[symbol]);\n\t\t\t\t}\n\t\t\t}\n\t\t};\n\n\t\tthis.getProductionResult = function (p, index, part, params) {\n\n\t\t\tvar result = void 0;\n\n\t\t\t// if p is a function, execute function and append return value\n\t\t\tif (typeof p === 'function') {\n\t\t\t\tresult = p({ index: index, currentAxiom: this.axiom, part: part, params: params });\n\n\t\t\t\t/* if p is no function and no iterable, then\n\t   it should be a string (regular) or object\n\t   directly return it then as result */\n\t\t\t} else if (typeof p === 'string' || p instanceof String || (typeof p === 'undefined' ? 'undefined' : _typeof(p)) === 'object' && p[Symbol.iterator] === undefined) {\n\t\t\t\t\tresult = p;\n\n\t\t\t\t\t// if p is a list/iterable\n\t\t\t\t} else if (p[Symbol.iterator] !== undefined && typeof p !== 'string' && !(p instanceof String)) {\n\t\t\t\t\t\t/*\n\t     go through the list and use\n\t     the first valid production in that list. (that returns true)\n\t     This assumes, it's a list of functions.\n\t     */\n\t\t\t\t\t\tvar _iteratorNormalCompletion = true;\n\t\t\t\t\t\tvar _didIteratorError = false;\n\t\t\t\t\t\tvar _iteratorError = undefined;\n\n\t\t\t\t\t\ttry {\n\t\t\t\t\t\t\tfor (var _iterator = p[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {\n\t\t\t\t\t\t\t\tvar _p = _step.value;\n\n\t\t\t\t\t\t\t\tvar _result = void 0;\n\t\t\t\t\t\t\t\tif (_p[Symbol.iterator] !== undefined && typeof _p !== 'string' && !(_p instanceof String)) {\n\t\t\t\t\t\t\t\t\t// If _p is itself also an Array, recursively get the result.\n\t\t\t\t\t\t\t\t\t_result = this.getProductionResult(_p);\n\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t_result = typeof _p === 'function' ? _p({ index: index, currentAxiom: this.axiom, part: part, params: params }) : _p;\n\t\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\t\tif (_result !== undefined && _result !== false) {\n\t\t\t\t\t\t\t\t\tresult = _result;\n\t\t\t\t\t\t\t\t\tbreak;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t} catch (err) {\n\t\t\t\t\t\t\t_didIteratorError = true;\n\t\t\t\t\t\t\t_iteratorError = err;\n\t\t\t\t\t\t} finally {\n\t\t\t\t\t\t\ttry {\n\t\t\t\t\t\t\t\tif (!_iteratorNormalCompletion && _iterator.return) {\n\t\t\t\t\t\t\t\t\t_iterator.return();\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t} finally {\n\t\t\t\t\t\t\t\tif (_didIteratorError) {\n\t\t\t\t\t\t\t\t\tthrow _iteratorError;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\n\t\t\treturn result === false ? part : result;\n\t\t};\n\n\t\tthis.applyProductions = function () {\n\t\t\t// a axiom can be a string or an array of objects that contain the key/value 'symbol'\n\t\t\tvar newAxiom = typeof this.axiom === 'string' ? '' : [];\n\t\t\tvar index = 0;\n\t\t\t// iterate all symbols/characters of the axiom and lookup according productions\n\t\t\tvar _iteratorNormalCompletion2 = true;\n\t\t\tvar _didIteratorError2 = false;\n\t\t\tvar _iteratorError2 = undefined;\n\n\t\t\ttry {\n\t\t\t\tfor (var _iterator2 = this.axiom[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {\n\t\t\t\t\tvar part = _step2.value;\n\n\t\t\t\t\tvar symbol = part;\n\n\t\t\t\t\t// Stuff for classic parametric L-Systems: get actual symbol and possible parameters\n\t\t\t\t\t// params will be given the production function, if applicable.\n\t\t\t\t\tvar params = [];\n\t\t\t\t\tif ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.symbol) symbol = part.symbol;\n\t\t\t\t\tif ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.params) params = part.params;\n\n\t\t\t\t\tvar result = part;\n\t\t\t\t\tif (this.productions.has(symbol)) {\n\t\t\t\t\t\tvar p = this.productions.get(symbol);\n\t\t\t\t\t\tresult = this.getProductionResult(p, index, part, params);\n\t\t\t\t\t}\n\n\t\t\t\t\t// finally add result to new axiom\n\t\t\t\t\tif (typeof newAxiom === 'string') {\n\t\t\t\t\t\tnewAxiom += result;\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// If result is an array, merge result into new axiom instead of pushing.\n\t\t\t\t\t\tif (result.constructor === Array) {\n\t\t\t\t\t\t\tArray.prototype.push.apply(newAxiom, result);\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tnewAxiom.push(result);\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tindex++;\n\t\t\t\t}\n\n\t\t\t\t// finally set new axiom and also return for convenience\n\t\t\t} catch (err) {\n\t\t\t\t_didIteratorError2 = true;\n\t\t\t\t_iteratorError2 = err;\n\t\t\t} finally {\n\t\t\t\ttry {\n\t\t\t\t\tif (!_iteratorNormalCompletion2 && _iterator2.return) {\n\t\t\t\t\t\t_iterator2.return();\n\t\t\t\t\t}\n\t\t\t\t} finally {\n\t\t\t\t\tif (_didIteratorError2) {\n\t\t\t\t\t\tthrow _iteratorError2;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tthis.axiom = newAxiom;\n\t\t\treturn newAxiom;\n\t\t};\n\n\t\t// iterate n times\n\t\tthis.iterate = function () {\n\t\t\tvar n = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];\n\n\t\t\tthis.iterations = n;\n\t\t\tvar lastIteration = void 0;\n\t\t\tfor (var iteration = 0; iteration < n; iteration++, this.iterationCount++) {\n\t\t\t\tlastIteration = this.applyProductions();\n\t\t\t}\n\t\t\treturn lastIteration;\n\t\t};\n\n\t\tthis.final = function () {\n\t\t\tvar _iteratorNormalCompletion3 = true;\n\t\t\tvar _didIteratorError3 = false;\n\t\t\tvar _iteratorError3 = undefined;\n\n\t\t\ttry {\n\t\t\t\tfor (var _iterator3 = this.axiom[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {\n\t\t\t\t\tvar part = _step3.value;\n\n\n\t\t\t\t\t// if we have objects for each symbol, (when using parametric L-Systems)\n\t\t\t\t\t// get actual identifiable symbol character\n\t\t\t\t\tvar symbol = part;\n\t\t\t\t\tif ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.symbol) symbol = part.symbol;\n\n\t\t\t\t\tif (this.finals.has(symbol)) {\n\t\t\t\t\t\tvar finalFunction = this.finals.get(symbol);\n\t\t\t\t\t\tvar typeOfFinalFunction = typeof finalFunction === 'undefined' ? 'undefined' : _typeof(finalFunction);\n\t\t\t\t\t\tif (typeOfFinalFunction !== 'function') {\n\t\t\t\t\t\t\tthrow Error('\\'' + symbol + '\\'' + ' has an object for a final function. But it is __not a function__ but a ' + typeOfFinalFunction + '!');\n\t\t\t\t\t\t}\n\t\t\t\t\t\t// execute symbols function\n\t\t\t\t\t\tfinalFunction();\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// symbol has no final function\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t} catch (err) {\n\t\t\t\t_didIteratorError3 = true;\n\t\t\t\t_iteratorError3 = err;\n\t\t\t} finally {\n\t\t\t\ttry {\n\t\t\t\t\tif (!_iteratorNormalCompletion3 && _iterator3.return) {\n\t\t\t\t\t\t_iterator3.return();\n\t\t\t\t\t}\n\t\t\t\t} finally {\n\t\t\t\t\tif (_didIteratorError3) {\n\t\t\t\t\t\tthrow _iteratorError3;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t};\n\n\t\t/*\n\t \thow to use match():\n\t  \t-----------------------\n\t \tIt is mainly a helper function for context sensitive productions.\n\t \tIf you use the classic syntax, it will by default be automatically transformed to proper\n\t \tJS-Syntax.\n\t \tHowerver, you can use the match helper function in your on productions:\n\t \n\t \tindex is the index of a production using `match`\n\t \teg. in a classic L-System\n\t \n\t \tLSYS = ABCDE\n\t \tB<C>DE -> 'Z'\n\t \n\t \tthe index of the `B<C>D -> 'Z'` production would be the index of C (which is 2) when the\n\t \tproduction would perform match(). so (if not using the ClassicLSystem class) you'd construction your context-sensitive production from C to Z like so:\n\t \n\t \tLSYS.setProduction('C', (index, axiom) => {\n\t \t\t(LSYS.match({index, match: 'B', direction: 'left'}) &&\n\t \t\t LSYS.match({index, match: 'DE', direction: 'right'}) ? 'Z' : 'C')\n\t \t})\n\t \n\t \tYou can just write match({index, ...} instead of match({index: index, ..}) because of new ES6 Object initialization, see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer#New_notations_in_ECMAScript_6\n\t \t*/\n\n\t\tthis.match = function (_ref2) {\n\t\t\tvar axiom_ = _ref2.axiom_;\n\t\t\tvar match = _ref2.match;\n\t\t\tvar ignoredSymbols = _ref2.ignoredSymbols;\n\t\t\tvar branchSymbols = _ref2.branchSymbols;\n\t\t\tvar index = _ref2.index;\n\t\t\tvar direction = _ref2.direction;\n\n\t\t\tvar branchCount = 0;\n\t\t\tvar explicitBranchCount = 0;\n\t\t\taxiom_ = axiom || this.axiom;\n\t\t\tif (branchSymbols === undefined) branchSymbols = this.branchSymbols !== undefined ? this.branchSymbols : [];\n\t\t\tif (ignoredSymbols === undefined) ignoredSymbols = this.ignoredSymbols !== undefined ? this.ignoredSymbols : [];\n\t\t\tvar returnMatchIndices = [];\n\n\t\t\tvar branchStart = void 0,\n\t\t\t    branchEnd = void 0,\n\t\t\t    axiomIndex = void 0,\n\t\t\t    loopIndexChange = void 0,\n\t\t\t    matchIndex = void 0,\n\t\t\t    matchIndexChange = void 0,\n\t\t\t    matchIndexOverflow = void 0;\n\t\t\t// set some variables depending on the direction to match\n\t\t\tif (direction === 'right') {\n\t\t\t\tloopIndexChange = matchIndexChange = +1;\n\t\t\t\taxiomIndex = index + 1;\n\t\t\t\tmatchIndex = 0;\n\t\t\t\tmatchIndexOverflow = match.length;\n\t\t\t\tif (branchSymbols.length > 0) {\n\t\t\t\t\t;\n\t\t\t\t\tvar _branchSymbols = branchSymbols;\n\n\t\t\t\t\tvar _branchSymbols2 = slicedToArray(_branchSymbols, 2);\n\n\t\t\t\t\tbranchStart = _branchSymbols2[0];\n\t\t\t\t\tbranchEnd = _branchSymbols2[1];\n\t\t\t\t}\n\t\t\t} else if (direction === 'left') {\n\t\t\t\tloopIndexChange = matchIndexChange = -1;\n\t\t\t\taxiomIndex = index - 1;\n\t\t\t\tmatchIndex = match.length - 1;\n\t\t\t\tmatchIndexOverflow = -1;\n\t\t\t\tif (branchSymbols.length > 0) {\n\t\t\t\t\t;\n\t\t\t\t\tvar _branchSymbols3 = branchSymbols;\n\n\t\t\t\t\tvar _branchSymbols4 = slicedToArray(_branchSymbols3, 2);\n\n\t\t\t\t\tbranchEnd = _branchSymbols4[0];\n\t\t\t\t\tbranchStart = _branchSymbols4[1];\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tthrow Error(direction, 'is not a valid direction for matching.');\n\t\t\t}\n\n\t\t\tfor (; axiomIndex < axiom_.length && axiomIndex >= 0; axiomIndex += loopIndexChange) {\n\t\t\t\t// FIXME: what about objects with .symbol\n\n\t\t\t\tvar axiomSymbol = axiom_[axiomIndex];\n\t\t\t\t// For objects match for objects `symbol`\n\t\t\t\tif ((typeof axiomSymbol === 'undefined' ? 'undefined' : _typeof(axiomSymbol)) === 'object') axiomSymbol = axiomSymbol.symbol;\n\t\t\t\tvar matchSymbol = match[matchIndex];\n\n\t\t\t\t// compare current symbol of axiom with current symbol of match\n\t\t\t\tif (axiomSymbol === matchSymbol) {\n\n\t\t\t\t\tif (branchCount === 0 || explicitBranchCount > 0) {\n\t\t\t\t\t\t// if its a match and previously NOT inside branch (branchCount===0) or in explicitly wanted branch (explicitBranchCount > 0)\n\n\t\t\t\t\t\t// if a bracket was explicitly stated in match axiom\n\t\t\t\t\t\tif (axiomSymbol === branchStart) {\n\t\t\t\t\t\t\texplicitBranchCount++;\n\t\t\t\t\t\t\tbranchCount++;\n\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t} else if (axiomSymbol === branchEnd) {\n\t\t\t\t\t\t\texplicitBranchCount = Math.max(0, explicitBranchCount - 1);\n\t\t\t\t\t\t\tbranchCount = Math.max(0, branchCount - 1);\n\t\t\t\t\t\t\t// only increase match if we are out of explicit branch\n\n\t\t\t\t\t\t\tif (explicitBranchCount === 0) {\n\n\t\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\treturnMatchIndices.push(axiomIndex);\n\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\n\t\t\t\t\t// overflowing matchIndices (matchIndex + 1 for right match, matchIndexEnd for left match )?\n\t\t\t\t\t// -> no more matches to do. return with true, as everything matched until here\n\t\t\t\t\t// *yay*\n\t\t\t\t\tif (matchIndex === matchIndexOverflow) {\n\t\t\t\t\t\treturn { result: true, matchIndices: returnMatchIndices };\n\t\t\t\t\t}\n\t\t\t\t} else if (axiomSymbol === branchStart) {\n\t\t\t\t\tbranchCount++;\n\t\t\t\t\tif (explicitBranchCount > 0) explicitBranchCount++;\n\t\t\t\t} else if (axiomSymbol === branchEnd) {\n\t\t\t\t\tbranchCount = Math.max(0, branchCount - 1);\n\t\t\t\t\tif (explicitBranchCount > 0) explicitBranchCount = Math.max(0, explicitBranchCount - 1);\n\t\t\t\t} else if ((branchCount === 0 || explicitBranchCount > 0 && matchSymbol !== branchEnd) && ignoredSymbols.includes(axiomSymbol) === false) {\n\t\t\t\t\t// not in branchSymbols/branch? or if in explicit branch, and not at the very end of\n\t\t\t\t\t// condition (at the ]), and symbol not in ignoredSymbols ? then false\n\t\t\t\t\treturn { result: false, matchIndices: returnMatchIndices };\n\t\t\t\t}\n\t\t\t}\n\n\t\t\treturn { result: false, matchIndices: returnMatchIndices };\n\t\t};\n\n\t\t// finally init stuff\n\t\tthis.parameters = {\n\t\t\tallowClassicSyntax: true\n\t\t};\n\n\t\tthis.ignoredSymbols = ignoredSymbols;\n\t\tthis.setAxiom(axiom);\n\t\tthis.productions = new Map();\n\n\t\tthis.branchSymbols = branchSymbols;\n\n\t\tthis.classicParametricSyntax = classicParametricSyntax;\n\n\t\tif (productions) this.setProductions(productions);\n\t\tif (finals) this.setFinals(finals);\n\n\t\tthis.iterationCount = 0;\n\t\treturn this;\n\t}\n\n\t// Set classic syntax helpers to library scope to be used outside of library context\n\t// for users eg.\n\tLSystem.transformClassicStochasticProductions = transformClassicStochasticProductions;\n\tLSystem.transformClassicCSProduction = transformClassicCSProduction;\n\tLSystem.transformClassicParametricAxiom = transformClassicParametricAxiom;\n\tLSystem.testClassicParametricSyntax = testClassicParametricSyntax;\n\n\tmodule.exports = LSystem;\n\n/***/ }\n/******/ ]);", __webpack_require__.p + "b1804293b737ae505bcd.worker.js");
+		return __webpack_require__(2)("/******/ (function(modules) { // webpackBootstrap\n/******/ \t// The module cache\n/******/ \tvar installedModules = {};\n\n/******/ \t// The require function\n/******/ \tfunction __webpack_require__(moduleId) {\n\n/******/ \t\t// Check if module is in cache\n/******/ \t\tif(installedModules[moduleId])\n/******/ \t\t\treturn installedModules[moduleId].exports;\n\n/******/ \t\t// Create a new module (and put it into the cache)\n/******/ \t\tvar module = installedModules[moduleId] = {\n/******/ \t\t\texports: {},\n/******/ \t\t\tid: moduleId,\n/******/ \t\t\tloaded: false\n/******/ \t\t};\n\n/******/ \t\t// Execute the module function\n/******/ \t\tmodules[moduleId].call(module.exports, module, module.exports, __webpack_require__);\n\n/******/ \t\t// Flag the module as loaded\n/******/ \t\tmodule.loaded = true;\n\n/******/ \t\t// Return the exports of the module\n/******/ \t\treturn module.exports;\n/******/ \t}\n\n\n/******/ \t// expose the modules object (__webpack_modules__)\n/******/ \t__webpack_require__.m = modules;\n\n/******/ \t// expose the module cache\n/******/ \t__webpack_require__.c = installedModules;\n\n/******/ \t// __webpack_public_path__\n/******/ \t__webpack_require__.p = \"\";\n\n/******/ \t// Load entry module and return exports\n/******/ \treturn __webpack_require__(0);\n/******/ })\n/************************************************************************/\n/******/ ([\n/* 0 */\n/***/ function(module, exports, __webpack_require__) {\n\n\t'use strict';\n\n\t// Require instead of importScripts because we use webpack\n\t// with worker-loader for compiling source: https://github.com/webpack/worker-loader\n\tvar LSystem = __webpack_require__(1);\n\tvar lsystem = new LSystem({});\n\tvar timeout = {};\n\n\tonmessage = function onmessage(e) {\n\t  // wait a few ms to start thread, to be able to cancel old tasks\n\t  clearTimeout(timeout);\n\t  timeout = setTimeout(function () {\n\n\t    lsystem.setAxiom(e.data.axiom);\n\n\t    lsystem.clearProductions();\n\t    var _iteratorNormalCompletion = true;\n\t    var _didIteratorError = false;\n\t    var _iteratorError = undefined;\n\n\t    try {\n\t      for (var _iterator = e.data.productions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {\n\t        var p = _step.value;\n\n\t        lsystem.setProduction(p[0], p[1]);\n\t      }\n\t    } catch (err) {\n\t      _didIteratorError = true;\n\t      _iteratorError = err;\n\t    } finally {\n\t      try {\n\t        if (!_iteratorNormalCompletion && _iterator.return) {\n\t          _iterator.return();\n\t        }\n\t      } finally {\n\t        if (_didIteratorError) {\n\t          throw _iteratorError;\n\t        }\n\t      }\n\t    }\n\n\t    lsystem.iterate(e.data.iterations);\n\n\t    postMessage({\n\t      result: lsystem.getString(),\n\t      initial: e.data\n\t    });\n\t  }, 20);\n\t};\n\n/***/ },\n/* 1 */\n/***/ function(module, exports) {\n\n\t'use strict';\n\n\t// Get a list of productions that have identical initiators,\n\t// Output a single stochastic production. Probability per production\n\t// is defined by amount of input productions (4 => 25% each, 2 => 50% etc.)\n\n\n\t// These transformers get a classic ABOP snytax as input and return a standardized\n\t// production object in the form of ['F',\n\t// {\n\t//  successor:String/Iterable\n\t//  [alternatively]stochasticSuccessors: Iterable of standardized objects with mandatory weight fields,\n\t//  leftCtx: iterable/string,\n\t//  rightCtx: Iterable/String,\n\t//  condition: Function }]\n\n\tfunction transformClassicStochasticProductions(productions) {\n\n\t  return function transformedProduction() {\n\t    var resultList = productions; // the parser for productions shall create this list\n\t    var count = resultList.length;\n\n\t    var r = Math.random();\n\t    for (var i = 0; i < count; i++) {\n\t      var range = (i + 1) / count;\n\t      if (r <= range) return resultList[i];\n\t    }\n\n\t    console.error('Should have returned a result of the list, something is wrong here with the random numbers?.');\n\t  };\n\t};\n\n\t// TODO: Scaffold classic parametric and context sensitive stuff out of main file\n\t// And simply require it here, eg:\n\t// this.testClassicParametricSyntax = require(classicSyntax.testParametric)??\n\tfunction testClassicParametricSyntax(axiom) {\n\t  return (/\\(.+\\)/.test(axiom)\n\t  );\n\t};\n\n\t// transforms things like 'A(1,2,5)B(2.5)' to\n\t// [ {symbol: 'A', params: [1,2,5]}, {symbol: 'B', params:[25]} ]\n\t// strips spaces\n\tfunction transformClassicParametricAxiom(axiom) {\n\n\t  // Replace whitespaces, then split between square brackets.\n\t  var splitAxiom = axiom.replace(/\\s+/g, '').split(/[\\(\\)]/);\n\t  // console.log('parts:', splitAxiom)\n\t  var newAxiom = [];\n\t  // Construct new axiom by getting the params and symbol.\n\t  for (var i = 0; i < splitAxiom.length - 1; i += 2) {\n\t    var params = splitAxiom[i + 1].split(',').map(Number);\n\t    newAxiom.push({ symbol: splitAxiom[i], params: params });\n\t  }\n\t  // console.log('parsed axiom:', newAxiom)\n\t};\n\n\tfunction transformClassicCSProduction(p) {\n\n\t  // before continuing, check if classic syntax actually there\n\t  // example: p = ['A<B>C', 'Z']\n\n\t  // left should be ['A', 'B']\n\t  var left = p[0].match(/(.+)<(.)/);\n\n\t  // right should be ['B', 'C']\n\t  var right = p[0].match(/(.)>(.+)/);\n\n\t  // Not a CS-Production (no '<' or '>'),\n\t  //return original production.\n\t  if (left === null && right === null) {\n\t    return p;\n\t  }\n\n\t  var predecessor = void 0;\n\t  // create new production object _or_ use the one set by the user\n\t  var productionObject = p[1].successor || p[1].successors ? p[1] : { successor: p[1] };\n\t  if (left !== null) {\n\t    predecessor = left[2];\n\t    productionObject.leftCtx = left[1];\n\t  }\n\t  if (right !== null) {\n\t    predecessor = right[1];\n\t    productionObject.rightCtx = right[2];\n\t  }\n\n\t  return [predecessor, productionObject];\n\t};\n\n\tfunction stringToObjects(string) {\n\t  if (typeof string !== 'string' && string instanceof String === false) return string;\n\t  var transformed = [];\n\t  for (var _iterator = string, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {\n\t    var _ref;\n\n\t    if (_isArray) {\n\t      if (_i >= _iterator.length) break;\n\t      _ref = _iterator[_i++];\n\t    } else {\n\t      _i = _iterator.next();\n\t      if (_i.done) break;\n\t      _ref = _i.value;\n\t    }\n\n\t    var symbol = _ref;\n\t    transformed.push({ symbol });\n\t  }return transformed;\n\t}\n\n\t// transform p to {successor: p}\n\t// if applicable also transform strings into array of {symbol: String} objects\n\t// TODO: make more modular! dont have forceObjects in here\n\tfunction normalizeProductionRightSide(p, forceObjects) {\n\n\t  if (p.hasOwnProperty('successors')) {\n\t    for (var i = 0; i < p.successors.length; i++) {\n\t      p.successors[i] = normalizeProductionRightSide(p.successors[i], forceObjects);\n\t    }\n\t  } else if (p.hasOwnProperty('successor') === false) {\n\t    p = { successor: p };\n\t  }\n\n\t  if (forceObjects && p.hasOwnProperty('successor')) {\n\t    p.successor = stringToObjects(p.successor);\n\t  }\n\n\t  return p;\n\t}\n\n\tfunction normalizeProduction(p, forceObjects) {\n\n\t  p[1] = normalizeProductionRightSide(p[1], forceObjects);\n\t  return p;\n\t}\n\n\tfunction LSystem(_ref) {\n\t\tvar _ref$axiom = _ref.axiom,\n\t\t    axiom = _ref$axiom === undefined ? '' : _ref$axiom,\n\t\t    productions = _ref.productions,\n\t\t    finals = _ref.finals,\n\t\t    _ref$branchSymbols = _ref.branchSymbols,\n\t\t    branchSymbols = _ref$branchSymbols === undefined ? '' : _ref$branchSymbols,\n\t\t    _ref$ignoredSymbols = _ref.ignoredSymbols,\n\t\t    ignoredSymbols = _ref$ignoredSymbols === undefined ? '' : _ref$ignoredSymbols,\n\t\t    _ref$allowClassicSynt = _ref.allowClassicSyntax,\n\t\t    allowClassicSyntax = _ref$allowClassicSynt === undefined ? true : _ref$allowClassicSynt,\n\t\t    _ref$classicParametri = _ref.classicParametricSyntax,\n\t\t    classicParametricSyntax = _ref$classicParametri === undefined ? false : _ref$classicParametri,\n\t\t    _ref$forceObjects = _ref.forceObjects,\n\t\t    forceObjects = _ref$forceObjects === undefined ? false : _ref$forceObjects,\n\t\t    _ref$debug = _ref.debug,\n\t\t    debug = _ref$debug === undefined ? false : _ref$debug;\n\n\n\t\t// TODO: forceObject to be more intelligent based on other productions??\n\n\t\tthis.setAxiom = function (axiom) {\n\t\t\tthis.axiom = this.forceObjects ? stringToObjects(axiom) : axiom;\n\t\t};\n\n\t\tthis.getRaw = function () {\n\t\t\treturn this.axiom;\n\t\t};\n\n\t\t// if using objects in axioms, as used in parametric L-Systems\n\t\tthis.getString = function () {\n\t\t\tvar onlySymbols = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;\n\n\t\t\tif (typeof this.axiom === 'string') return this.axiom;\n\t\t\tif (onlySymbols === true) {\n\t\t\t\treturn this.axiom.reduce((prev, current) => {\n\t\t\t\t\tif (current.symbol === undefined) {\n\t\t\t\t\t\tconsole.log('found:', current);\n\t\t\t\t\t\tthrow new Error('L-Systems that use only objects as symbols (eg: {symbol: \\'F\\', params: []}), cant use string symbols (eg. \\'F\\')! Check if you always return objects in your productions and no strings.');\n\t\t\t\t\t}\n\t\t\t\t\treturn prev + current.symbol;\n\t\t\t\t}, '');\n\t\t\t} else {\n\t\t\t\treturn JSON.stringify(this.axiom);\n\t\t\t}\n\t\t};\n\n\t\tthis.getStringResult = this.getString;\n\n\t\tthis.setProduction = function (from, to) {\n\t\t\tvar allowAppendingMultiSuccessors = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;\n\n\t\t\tvar newProduction = [from, to];\n\t\t\tif (newProduction === undefined) throw new Error('no production specified.');\n\n\t\t\tif (to.successor && to.successors) {\n\t\t\t\tthrow new Error('You can not have both a \"successor\" and a \"successors\" field in your production!');\n\t\t\t}\n\n\t\t\t// Apply production transformers and normalizations\n\t\t\tif (this.allowClassicSyntax === true) {\n\t\t\t\tnewProduction = transformClassicCSProduction(newProduction, this.ignoredSymbols);\n\t\t\t}\n\n\t\t\tnewProduction = normalizeProduction(newProduction, this.forceObjects);\n\n\t\t\t// check wether production is stochastic\n\t\t\tnewProduction[1].isStochastic = newProduction[1].successors !== undefined && newProduction[1].successors.every(successor => successor.weight !== undefined);\n\n\t\t\tif (newProduction[1].isStochastic) {\n\t\t\t\t// calculate weight sum\n\t\t\t\tnewProduction[1].weightSum = 0;\n\t\t\t\tfor (var _iterator = newProduction[1].successors, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {\n\t\t\t\t\tvar _ref2;\n\n\t\t\t\t\tif (_isArray) {\n\t\t\t\t\t\tif (_i >= _iterator.length) break;\n\t\t\t\t\t\t_ref2 = _iterator[_i++];\n\t\t\t\t\t} else {\n\t\t\t\t\t\t_i = _iterator.next();\n\t\t\t\t\t\tif (_i.done) break;\n\t\t\t\t\t\t_ref2 = _i.value;\n\t\t\t\t\t}\n\n\t\t\t\t\tvar s = _ref2;\n\n\t\t\t\t\tnewProduction[1].weightSum += s.weight;\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tvar symbol = newProduction[0];\n\t\t\tif (allowAppendingMultiSuccessors === true && this.productions.has(symbol)) {\n\n\t\t\t\tvar existingProduction = this.productions.get(symbol);\n\t\t\t\tvar singleSuccessor = existingProduction.successor;\n\t\t\t\tvar multiSuccessors = existingProduction.successors;\n\n\t\t\t\tif (singleSuccessor && !multiSuccessors) {\n\t\t\t\t\t// replace existing prod with new obj and add previous successor as first elem\n\t\t\t\t\t// to new successors field.\n\t\t\t\t\texistingProduction = { successors: [singleSuccessor] };\n\t\t\t\t}\n\t\t\t\texistingProduction.successors.push(newProduction[1]);\n\t\t\t\tthis.productions.set(symbol, existingProduction);\n\t\t\t} else {\n\t\t\t\tthis.productions.set(symbol, newProduction[1]);\n\t\t\t}\n\t\t};\n\n\t\t// set multiple productions from name:value Object\n\t\tthis.setProductions = function (newProductions) {\n\t\t\tif (newProductions === undefined) throw new Error('no production specified.');\n\t\t\tthis.clearProductions();\n\n\t\t\tfor (var _iterator2 = Object.entries(newProductions), _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {\n\t\t\t\tvar _ref4;\n\n\t\t\t\tif (_isArray2) {\n\t\t\t\t\tif (_i2 >= _iterator2.length) break;\n\t\t\t\t\t_ref4 = _iterator2[_i2++];\n\t\t\t\t} else {\n\t\t\t\t\t_i2 = _iterator2.next();\n\t\t\t\t\tif (_i2.done) break;\n\t\t\t\t\t_ref4 = _i2.value;\n\t\t\t\t}\n\n\t\t\t\tvar _ref3 = _ref4;\n\t\t\t\tvar from = _ref3[0];\n\t\t\t\tvar to = _ref3[1];\n\n\t\t\t\tthis.setProduction(from, to, true);\n\t\t\t}\n\t\t};\n\n\t\tthis.clearProductions = function () {\n\t\t\tthis.productions = new Map();\n\t\t};\n\n\t\tthis.setFinal = function (symbol, final) {\n\t\t\tvar newFinal = [symbol, final];\n\t\t\tif (newFinal === undefined) {\n\t\t\t\tthrow new Error('no final specified.');\n\t\t\t}\n\t\t\tthis.finals.set(newFinal[0], newFinal[1]);\n\t\t};\n\n\t\t// set multiple finals from name:value Object\n\t\tthis.setFinals = function (newFinals) {\n\t\t\tif (newFinals === undefined) throw new Error('no finals specified.');\n\t\t\tthis.finals = new Map();\n\t\t\tfor (var symbol in newFinals) {\n\t\t\t\tif (newFinals.hasOwnProperty(symbol)) {\n\t\t\t\t\tthis.setFinal(symbol, newFinals[symbol]);\n\t\t\t\t}\n\t\t\t}\n\t\t};\n\n\t\t//var hasWeight = el => el.weight !== undefined;\n\t\tthis.getProductionResult = function (p, index, part, params) {\n\t\t\tvar recursive = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;\n\n\n\t\t\tvar successor = p.successor;\n\t\t\tvar contextSensitive = p.leftCtx !== undefined || p.rightCtx !== undefined;\n\t\t\tvar conditional = p.condition !== undefined;\n\t\t\tvar stochastic = false;\n\t\t\tvar result = false;\n\t\t\tvar precheck = true;\n\n\t\t\t// Check if condition is true, only then continue to check left and right contexts\n\t\t\tif (conditional && p.condition({ index, currentAxiom: this.axiom, part, params }) === false) {\n\t\t\t\tprecheck = false;\n\t\t\t} else if (contextSensitive) {\n\t\t\t\tif (p.leftCtx !== undefined && p.rightCtx !== undefined) {\n\t\t\t\t\tprecheck = this.match({ direction: 'left', match: p.leftCtx, index: index, branchSymbols: '[]' }).result && this.match({ direction: 'right', match: p.rightCtx, index: index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols }).result;\n\t\t\t\t} else if (p.leftCtx !== undefined) {\n\t\t\t\t\tprecheck = this.match({ direction: 'left', match: p.leftCtx, index: index, branchSymbols: '[]' }).result;\n\t\t\t\t} else if (p.rightCtx !== undefined) {\n\t\t\t\t\tprecheck = this.match({ direction: 'right', match: p.rightCtx, index: index, branchSymbols: '[]' }).result;\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// If conditions and context don't allow product, keep result = false\n\t\t\tif (precheck === false) {\n\t\t\t\tresult = false;\n\t\t\t}\n\n\t\t\t// If p has multiple successors\n\t\t\telse if (p.successors) {\n\t\t\t\t\t// This could be stochastic successors or multiple functions\n\t\t\t\t\t// Tread every element in the list as an individual production object\n\t\t\t\t\t// For stochastic productions (if all prods in the list have a 'weight' property)\n\t\t\t\t\t// Get a random number then pick a production from the list according to their weight\n\n\t\t\t\t\tvar currentWeight, threshWeight;\n\t\t\t\t\tif (p.isStochastic) {\n\t\t\t\t\t\tthreshWeight = Math.random() * p.weightSum;\n\t\t\t\t\t\tcurrentWeight = 0;\n\t\t\t\t\t}\n\t\t\t\t\t/*\n\t    go through the list and use\n\t    the first valid production in that list. (that returns true)\n\t    This assumes, it's a list of functions.\n\t    No recursion here: no successors inside successors.\n\t    */\n\t\t\t\t\tfor (var _iterator3 = p.successors, _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {\n\t\t\t\t\t\tvar _ref5;\n\n\t\t\t\t\t\tif (_isArray3) {\n\t\t\t\t\t\t\tif (_i3 >= _iterator3.length) break;\n\t\t\t\t\t\t\t_ref5 = _iterator3[_i3++];\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t_i3 = _iterator3.next();\n\t\t\t\t\t\t\tif (_i3.done) break;\n\t\t\t\t\t\t\t_ref5 = _i3.value;\n\t\t\t\t\t\t}\n\n\t\t\t\t\t\tvar _p = _ref5;\n\n\t\t\t\t\t\tif (p.isStochastic) {\n\t\t\t\t\t\t\tcurrentWeight += _p.weight;\n\t\t\t\t\t\t\tif (currentWeight < threshWeight) continue;\n\t\t\t\t\t\t}\n\t\t\t\t\t\t// If currentWeight >= thresWeight, a production is choosen stochastically\n\t\t\t\t\t\t// and evaluated recursively because it , kax also have rightCtx, leftCtx and condition to further inhibit production. This is not standard L-System behaviour though!\n\n\t\t\t\t\t\t// last true is for recursiv call\n\t\t\t\t\t\t// TODO: refactor getProductionResult to use an object\n\t\t\t\t\t\tvar _result = this.getProductionResult(_p, index, part, params, true);\n\n\t\t\t\t\t\tif (_result !== undefined && _result !== false) {\n\t\t\t\t\t\t\tresult = _result;\n\t\t\t\t\t\t\tbreak;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t// if successor is a function, execute function and append return value\n\t\t\t\telse if (typeof successor === 'function') {\n\n\t\t\t\t\t\tresult = successor({ index, currentAxiom: this.axiom, part, params });\n\t\t\t\t\t} else {\n\t\t\t\t\t\tresult = successor;\n\t\t\t\t\t}\n\n\t\t\tif (!result) {\n\t\t\t\t// Allow undefined or false results for recursive calls of this func\n\t\t\t\treturn recursive ? result : part;\n\t\t\t}\n\t\t\treturn result;\n\t\t};\n\n\t\tthis.applyProductions = function () {\n\t\t\t// a axiom can be a string or an array of objects that contain the key/value 'symbol'\n\t\t\tvar newAxiom = typeof this.axiom === 'string' ? '' : [];\n\t\t\tvar index = 0;\n\n\t\t\t// iterate all symbols/characters of the axiom and lookup according productions\n\t\t\tfor (var _iterator4 = this.axiom, _isArray4 = Array.isArray(_iterator4), _i4 = 0, _iterator4 = _isArray4 ? _iterator4 : _iterator4[Symbol.iterator]();;) {\n\t\t\t\tvar _ref6;\n\n\t\t\t\tif (_isArray4) {\n\t\t\t\t\tif (_i4 >= _iterator4.length) break;\n\t\t\t\t\t_ref6 = _iterator4[_i4++];\n\t\t\t\t} else {\n\t\t\t\t\t_i4 = _iterator4.next();\n\t\t\t\t\tif (_i4.done) break;\n\t\t\t\t\t_ref6 = _i4.value;\n\t\t\t\t}\n\n\t\t\t\tvar part = _ref6;\n\n\n\t\t\t\t// Stuff for classic parametric L-Systems: get actual symbol and possible parameters\n\t\t\t\t// params will be given the production function, if applicable.\n\n\t\t\t\tvar symbol = part.symbol || part;\n\t\t\t\tvar params = part.params || [];\n\n\t\t\t\tvar result = part;\n\t\t\t\tif (this.productions.has(symbol)) {\n\t\t\t\t\tvar p = this.productions.get(symbol);\n\t\t\t\t\tresult = this.getProductionResult(p, index, part, params);\n\t\t\t\t}\n\n\t\t\t\t// Got result. Now add result to new axiom.\n\t\t\t\tif (typeof newAxiom === 'string') {\n\t\t\t\t\tnewAxiom += result;\n\t\t\t\t} else if (result instanceof Array) {\n\t\t\t\t\t// If result is an array, merge result into new axiom instead of pushing.\n\t\t\t\t\tArray.prototype.push.apply(newAxiom, result);\n\t\t\t\t} else {\n\t\t\t\t\tnewAxiom.push(result);\n\t\t\t\t}\n\t\t\t\tindex++;\n\t\t\t}\n\n\t\t\t// finally set new axiom and also return it for convenience.\n\t\t\tthis.axiom = newAxiom;\n\t\t\treturn newAxiom;\n\t\t};\n\n\t\tthis.iterate = function () {\n\t\t\tvar n = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;\n\n\t\t\tthis.iterations = n;\n\t\t\tvar lastIteration = void 0;\n\t\t\tfor (var iteration = 0; iteration < n; iteration++) {\n\t\t\t\tlastIteration = this.applyProductions();\n\t\t\t}\n\t\t\treturn lastIteration;\n\t\t};\n\n\t\tthis.final = function () {\n\t\t\tvar index = 0;\n\t\t\tfor (var _iterator5 = this.axiom, _isArray5 = Array.isArray(_iterator5), _i5 = 0, _iterator5 = _isArray5 ? _iterator5 : _iterator5[Symbol.iterator]();;) {\n\t\t\t\tvar _ref7;\n\n\t\t\t\tif (_isArray5) {\n\t\t\t\t\tif (_i5 >= _iterator5.length) break;\n\t\t\t\t\t_ref7 = _iterator5[_i5++];\n\t\t\t\t} else {\n\t\t\t\t\t_i5 = _iterator5.next();\n\t\t\t\t\tif (_i5.done) break;\n\t\t\t\t\t_ref7 = _i5.value;\n\t\t\t\t}\n\n\t\t\t\tvar part = _ref7;\n\n\n\t\t\t\t// if we have objects for each symbol, (when using parametric L-Systems)\n\t\t\t\t// get actual identifiable symbol character\n\t\t\t\tvar symbol = part;\n\t\t\t\tif (typeof part === 'object' && part.symbol) symbol = part.symbol;\n\n\t\t\t\tif (this.finals.has(symbol)) {\n\t\t\t\t\tvar finalFunction = this.finals.get(symbol);\n\t\t\t\t\tvar typeOfFinalFunction = typeof finalFunction;\n\t\t\t\t\tif (typeOfFinalFunction !== 'function') {\n\t\t\t\t\t\tthrow Error('\\'' + symbol + '\\'' + ' has an object for a final function. But it is __not a function__ but a ' + typeOfFinalFunction + '!');\n\t\t\t\t\t}\n\t\t\t\t\t// execute symbols function\n\t\t\t\t\tfinalFunction({ index, part });\n\t\t\t\t} else {\n\t\t\t\t\t// symbol has no final function\n\t\t\t\t}\n\t\t\t\tindex++;\n\t\t\t}\n\t\t};\n\n\t\t/*\n\t \thow to use match():\n\t  \t-----------------------\n\t \tIt is mainly a helper function for context sensitive productions.\n\t \tIf you use the classic syntax, it will by default be automatically transformed to proper\n\t \tJS-Syntax.\n\t \tHowerver, you can use the match helper function in your on productions:\n\t \n\t \tindex is the index of a production using `match`\n\t \teg. in a classic L-System\n\t \n\t \tLSYS = ABCDE\n\t \tB<C>DE -> 'Z'\n\t \n\t \tthe index of the `B<C>D -> 'Z'` production would be the index of C (which is 2) when the\n\t \tproduction would perform match(). so (if not using the ClassicLSystem class) you'd construction your context-sensitive production from C to Z like so:\n\t \n\t \tLSYS.setProduction('C', (index, axiom) => {\n\t \t\t(LSYS.match({index, match: 'B', direction: 'left'}) &&\n\t \t\t LSYS.match({index, match: 'DE', direction: 'right'}) ? 'Z' : 'C')\n\t \t})\n\t \n\t \tYou can just write match({index, ...} instead of match({index: index, ..}) because of new ES6 Object initialization, see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer#New_notations_in_ECMAScript_6\n\t \t*/\n\n\t\tthis.match = function (_ref8) {\n\t\t\tvar axiom_ = _ref8.axiom_,\n\t\t\t    match = _ref8.match,\n\t\t\t    ignoredSymbols = _ref8.ignoredSymbols,\n\t\t\t    branchSymbols = _ref8.branchSymbols,\n\t\t\t    index = _ref8.index,\n\t\t\t    direction = _ref8.direction;\n\n\n\t\t\tvar branchCount = 0;\n\t\t\tvar explicitBranchCount = 0;\n\t\t\taxiom_ = axiom_ || this.axiom;\n\t\t\tif (branchSymbols === undefined) branchSymbols = this.branchSymbols !== undefined ? this.branchSymbols : [];\n\t\t\tif (ignoredSymbols === undefined) ignoredSymbols = this.ignoredSymbols !== undefined ? this.ignoredSymbols : [];\n\t\t\tvar returnMatchIndices = [];\n\n\t\t\tvar branchStart = void 0,\n\t\t\t    branchEnd = void 0,\n\t\t\t    axiomIndex = void 0,\n\t\t\t    loopIndexChange = void 0,\n\t\t\t    matchIndex = void 0,\n\t\t\t    matchIndexChange = void 0,\n\t\t\t    matchIndexOverflow = void 0;\n\t\t\t// set some variables depending on the direction to match\n\n\t\t\tif (direction === 'right') {\n\t\t\t\tloopIndexChange = matchIndexChange = +1;\n\t\t\t\taxiomIndex = index + 1;\n\t\t\t\tmatchIndex = 0;\n\t\t\t\tmatchIndexOverflow = match.length;\n\t\t\t\tif (branchSymbols.length > 0) {\n\t\t\t\t\t;\n\t\t\t\t\tvar _branchSymbols = branchSymbols;\n\t\t\t\t\tbranchStart = _branchSymbols[0];\n\t\t\t\t\tbranchEnd = _branchSymbols[1];\n\t\t\t\t}\n\t\t\t} else if (direction === 'left') {\n\t\t\t\tloopIndexChange = matchIndexChange = -1;\n\t\t\t\taxiomIndex = index - 1;\n\t\t\t\tmatchIndex = match.length - 1;\n\t\t\t\tmatchIndexOverflow = -1;\n\t\t\t\tif (branchSymbols.length > 0) {\n\t\t\t\t\t;\n\t\t\t\t\tvar _branchSymbols2 = branchSymbols;\n\t\t\t\t\tbranchEnd = _branchSymbols2[0];\n\t\t\t\t\tbranchStart = _branchSymbols2[1];\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tthrow Error(direction, 'is not a valid direction for matching.');\n\t\t\t}\n\n\t\t\tfor (; axiomIndex < axiom_.length && axiomIndex >= 0; axiomIndex += loopIndexChange) {\n\n\t\t\t\tvar axiomSymbol = axiom_[axiomIndex].symbol || axiom_[axiomIndex];\n\t\t\t\tvar matchSymbol = match[matchIndex];\n\n\t\t\t\t// compare current symbol of axiom with current symbol of match\n\t\t\t\tif (axiomSymbol === matchSymbol) {\n\n\t\t\t\t\tif (branchCount === 0 || explicitBranchCount > 0) {\n\t\t\t\t\t\t// if its a match and previously NOT inside branch (branchCount===0) or in explicitly wanted branch (explicitBranchCount > 0)\n\n\t\t\t\t\t\t// if a bracket was explicitly stated in match axiom\n\t\t\t\t\t\tif (axiomSymbol === branchStart) {\n\t\t\t\t\t\t\texplicitBranchCount++;\n\t\t\t\t\t\t\tbranchCount++;\n\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t} else if (axiomSymbol === branchEnd) {\n\t\t\t\t\t\t\texplicitBranchCount = Math.max(0, explicitBranchCount - 1);\n\t\t\t\t\t\t\tbranchCount = Math.max(0, branchCount - 1);\n\t\t\t\t\t\t\t// only increase match if we are out of explicit branch\n\n\t\t\t\t\t\t\tif (explicitBranchCount === 0) {\n\n\t\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\treturnMatchIndices.push(axiomIndex);\n\t\t\t\t\t\t\tmatchIndex += matchIndexChange;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\n\t\t\t\t\t// overflowing matchIndices (matchIndex + 1 for right match, matchIndexEnd for left match )?\n\t\t\t\t\t// -> no more matches to do. return with true, as everything matched until here\n\t\t\t\t\t// *yay*\n\t\t\t\t\tif (matchIndex === matchIndexOverflow) {\n\t\t\t\t\t\treturn { result: true, matchIndices: returnMatchIndices };\n\t\t\t\t\t}\n\t\t\t\t} else if (axiomSymbol === branchStart) {\n\t\t\t\t\tbranchCount++;\n\t\t\t\t\tif (explicitBranchCount > 0) explicitBranchCount++;\n\t\t\t\t} else if (axiomSymbol === branchEnd) {\n\t\t\t\t\tbranchCount = Math.max(0, branchCount - 1);\n\t\t\t\t\tif (explicitBranchCount > 0) explicitBranchCount = Math.max(0, explicitBranchCount - 1);\n\t\t\t\t} else if ((branchCount === 0 || explicitBranchCount > 0 && matchSymbol !== branchEnd) && ignoredSymbols.includes(axiomSymbol) === false) {\n\t\t\t\t\t// not in branchSymbols/branch? or if in explicit branch, and not at the very end of\n\t\t\t\t\t// condition (at the ]), and symbol not in ignoredSymbols ? then false\n\t\t\t\t\treturn { result: false, matchIndices: returnMatchIndices };\n\t\t\t\t}\n\t\t\t}\n\n\t\t\treturn { result: false, matchIndices: returnMatchIndices };\n\t\t};\n\n\t\tthis.ignoredSymbols = ignoredSymbols;\n\t\tthis.debug = debug;\n\t\tthis.branchSymbols = branchSymbols;\n\t\tthis.allowClassicSyntax = allowClassicSyntax;\n\t\tthis.classicParametricSyntax = classicParametricSyntax;\n\t\tthis.forceObjects = forceObjects;\n\n\t\tthis.setAxiom(axiom);\n\n\t\tthis.clearProductions();\n\t\tif (productions) this.setProductions(productions);\n\t\tif (finals) this.setFinals(finals);\n\n\t\treturn this;\n\t}\n\n\t// Set classic syntax helpers to library scope to be used outside of library context\n\t// for users eg.\n\tLSystem.transformClassicStochasticProductions = transformClassicStochasticProductions;\n\tLSystem.transformClassicCSProduction = transformClassicCSProduction;\n\tLSystem.transformClassicParametricAxiom = transformClassicParametricAxiom;\n\tLSystem.testClassicParametricSyntax = testClassicParametricSyntax;\n\n\tmodule.exports = LSystem;\n\n/***/ }\n/******/ ]);", __webpack_require__.p + "d9a2b5e60d9124635164.worker.js");
 	};
 
 /***/ },
@@ -755,6 +781,16 @@
 	// Get a list of productions that have identical initiators,
 	// Output a single stochastic production. Probability per production
 	// is defined by amount of input productions (4 => 25% each, 2 => 50% etc.)
+
+
+	// These transformers get a classic ABOP snytax as input and return a standardized
+	// production object in the form of ['F',
+	// {
+	//  successor:String/Iterable
+	//  [alternatively]stochasticSuccessors: Iterable of standardized objects with mandatory weight fields,
+	//  leftCtx: iterable/string,
+	//  rightCtx: Iterable/String,
+	//  condition: Function }]
 
 	function transformClassicStochasticProductions(productions) {
 
@@ -797,11 +833,7 @@
 	  // console.log('parsed axiom:', newAxiom)
 	};
 
-	// transform a classic syntax production into valid JS production
-	// TODO: Only work on first part pf production P[0]
-	// -> this.transformClassicCSCondition
-	function transformClassicCSProduction(p, ignoredSymbols) {
-	  var _this = this;
+	function transformClassicCSProduction(p) {
 
 	  // before continuing, check if classic syntax actually there
 	  // example: p = ['A<B>C', 'Z']
@@ -818,124 +850,103 @@
 	    return p;
 	  }
 
-	  // indexSymbol should be 'B' in A<B>C
-	  // get it either from left side or right side if left is nonexistent
-	  var indexSymbol = left !== null ? left[2] : right[1];
-
-	  // double check: make sure that the right and left match got the same indexSymbol (B)
-	  if (left !== null && right !== null && left[2] !== right[1]) {
-	    throw new Error('index symbol differs in context sensitive production from left to right check.', left[2], '!==', right[1]);
+	  var predecessor = void 0;
+	  // create new production object _or_ use the one set by the user
+	  var productionObject = p[1].successor || p[1].successors ? p[1] : { successor: p[1] };
+	  if (left !== null) {
+	    predecessor = left[2];
+	    productionObject.leftCtx = left[1];
+	  }
+	  if (right !== null) {
+	    predecessor = right[1];
+	    productionObject.rightCtx = right[2];
 	  }
 
-	  // finally build the new (valid JS) production
-	  // (that is being executed instead of the classic syntax,
-	  //  which can't be interpreted by the JS engine)
-	  var transformedFunction = function transformedFunction(_ref) {
-	    var _index = _ref.index;
-	    var _part = _ref.part;
-	    var _axiom = _ref.currentAxiom;
-	    var _params = _ref.params;
+	  return [predecessor, productionObject];
+	};
 
+	function stringToObjects(string) {
+	  if (typeof string !== 'string' && string instanceof String === false) return string;
+	  var transformed = [];
+	  for (var _iterator = string, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+	    var _ref;
 
-	    var leftMatch = { result: true };
-	    var rightMatch = { result: true };
-
-	    // this can possibly be optimized (see: https://developers.google.com/speed/articles/optimizing-javascript#avoiding-pitfalls-with-closures)
-	    //
-
-	    if (left !== null) {
-	      leftMatch = _this.match({ direction: 'left', match: left[1], index: _index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols });
-	    }
-
-	    // don't match with right side if left already false or no right match necessary
-	    if (leftMatch.result === false || leftMatch.result === true && right === null) return leftMatch.result ? p[1] : false;
-
-	    // see left!== null. could be optimized. Creating 3 variations of function
-	    // so left/right are not checked here, which improves speed, as left/right
-	    // are in a scope above.
-	    if (right !== null) {
-	      rightMatch = _this.match({ direction: 'right', match: right[2], index: _index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols });
-	    }
-
-	    // Match! On a match return either the result of given production function
-	    // or simply return the symbol itself if its no function.
-	    if (leftMatch.result && rightMatch.result) {
-	      return typeof p[1] === 'function' ? p[1]({ index: _index, part: _part, currentAxiom: _axiom, params: _params, leftMatchIndices: leftMatch.matchIndices, rightMatchIndices: rightMatch.matchIndices, ignoredSymbols: ignoredSymbols }) : p[1];
+	    if (_isArray) {
+	      if (_i >= _iterator.length) break;
+	      _ref = _iterator[_i++];
 	    } else {
-	      return false;
-	    }
-	  };
-
-	  var transformedProduction = [indexSymbol, transformedFunction];
-
-	  return transformedProduction;
-	};
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-	  return typeof obj;
-	} : function (obj) {
-	  return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-	};
-
-	var slicedToArray = function () {
-	  function sliceIterator(arr, i) {
-	    var _arr = [];
-	    var _n = true;
-	    var _d = false;
-	    var _e = undefined;
-
-	    try {
-	      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-	        _arr.push(_s.value);
-
-	        if (i && _arr.length === i) break;
-	      }
-	    } catch (err) {
-	      _d = true;
-	      _e = err;
-	    } finally {
-	      try {
-	        if (!_n && _i["return"]) _i["return"]();
-	      } finally {
-	        if (_d) throw _e;
-	      }
+	      _i = _iterator.next();
+	      if (_i.done) break;
+	      _ref = _i.value;
 	    }
 
-	    return _arr;
+	    var symbol = _ref;
+	    transformed.push({ symbol });
+	  }return transformed;
+	}
+
+	// transform p to {successor: p}
+	// if applicable also transform strings into array of {symbol: String} objects
+	// TODO: make more modular! dont have forceObjects in here
+	function normalizeProductionRightSide(p, forceObjects) {
+
+	  if (p.hasOwnProperty('successors')) {
+	    for (var i = 0; i < p.successors.length; i++) {
+	      p.successors[i] = normalizeProductionRightSide(p.successors[i], forceObjects);
+	    }
+	  } else if (p.hasOwnProperty('successor') === false) {
+	    p = { successor: p };
 	  }
 
-	  return function (arr, i) {
-	    if (Array.isArray(arr)) {
-	      return arr;
-	    } else if (Symbol.iterator in Object(arr)) {
-	      return sliceIterator(arr, i);
-	    } else {
-	      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-	    }
-	  };
-	}();
+	  if (forceObjects && p.hasOwnProperty('successor')) {
+	    p.successor = stringToObjects(p.successor);
+	  }
+
+	  return p;
+	}
+
+	function normalizeProduction(p, forceObjects) {
+
+	  p[1] = normalizeProductionRightSide(p[1], forceObjects);
+	  return p;
+	}
 
 	function LSystem(_ref) {
-		var axiom = _ref.axiom;
-		var productions = _ref.productions;
-		var finals = _ref.finals;
-		var branchSymbols = _ref.branchSymbols;
-		var ignoredSymbols = _ref.ignoredSymbols;
-		var classicParametricSyntax = _ref.classicParametricSyntax;
+		var _ref$axiom = _ref.axiom,
+		    axiom = _ref$axiom === undefined ? '' : _ref$axiom,
+		    productions = _ref.productions,
+		    finals = _ref.finals,
+		    _ref$branchSymbols = _ref.branchSymbols,
+		    branchSymbols = _ref$branchSymbols === undefined ? '' : _ref$branchSymbols,
+		    _ref$ignoredSymbols = _ref.ignoredSymbols,
+		    ignoredSymbols = _ref$ignoredSymbols === undefined ? '' : _ref$ignoredSymbols,
+		    _ref$allowClassicSynt = _ref.allowClassicSyntax,
+		    allowClassicSyntax = _ref$allowClassicSynt === undefined ? true : _ref$allowClassicSynt,
+		    _ref$classicParametri = _ref.classicParametricSyntax,
+		    classicParametricSyntax = _ref$classicParametri === undefined ? false : _ref$classicParametri,
+		    _ref$forceObjects = _ref.forceObjects,
+		    forceObjects = _ref$forceObjects === undefined ? false : _ref$forceObjects,
+		    _ref$debug = _ref.debug,
+		    debug = _ref$debug === undefined ? false : _ref$debug;
 
-		// faking default values until better support lands in all browser
-		axiom = typeof axiom !== 'undefined' ? axiom : '';
-		branchSymbols = typeof branchSymbols !== 'undefined' ? branchSymbols : "";
-		ignoredSymbols = typeof ignoredSymbols !== 'undefined' ? ignoredSymbols : "";
-		classicParametricSyntax = typeof classicParametricSyntax !== 'undefined' ? classicParametricSyntax : 'false';
+
+		// TODO: forceObject to be more intelligent based on other productions??
+
+		this.setAxiom = function (axiom) {
+			this.axiom = this.forceObjects ? stringToObjects(axiom) : axiom;
+		};
+
+		this.getRaw = function () {
+			return this.axiom;
+		};
 
 		// if using objects in axioms, as used in parametric L-Systems
 		this.getString = function () {
-			var onlySymbols = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
+			var onlySymbols = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
 
 			if (typeof this.axiom === 'string') return this.axiom;
 			if (onlySymbols === true) {
-				return this.axiom.reduce(function (prev, current) {
+				return this.axiom.reduce((prev, current) => {
 					if (current.symbol === undefined) {
 						console.log('found:', current);
 						throw new Error('L-Systems that use only objects as symbols (eg: {symbol: \'F\', params: []}), cant use string symbols (eg. \'F\')! Check if you always return objects in your productions and no strings.');
@@ -947,31 +958,65 @@
 			}
 		};
 
-		this.setAxiom = function (axiom) {
-			this.axiom = axiom;
-		};
+		this.getStringResult = this.getString;
 
-		this.setProduction = function (A, B) {
-			var doAppend = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+		this.setProduction = function (from, to) {
+			var allowAppendingMultiSuccessors = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-			var newProduction = [A, B];
+			var newProduction = [from, to];
 			if (newProduction === undefined) throw new Error('no production specified.');
 
-			if (this.parameters.allowClassicSyntax === true) {
-				newProduction = transformClassicCSProduction.bind(this)(newProduction, this.ignoredSymbols);
+			if (to.successor && to.successors) {
+				throw new Error('You can not have both a "successor" and a "successors" field in your production!');
 			}
-			var symbol = newProduction[0];
 
-			if (doAppend === true && this.productions.has(symbol)) {
+			// Apply production transformers and normalizations
+			if (this.allowClassicSyntax === true) {
+				newProduction = transformClassicCSProduction(newProduction, this.ignoredSymbols);
+			}
+
+			newProduction = normalizeProduction(newProduction, this.forceObjects);
+
+			// check wether production is stochastic
+			newProduction[1].isStochastic = newProduction[1].successors !== undefined && newProduction[1].successors.every(successor => successor.weight !== undefined);
+
+			if (newProduction[1].isStochastic) {
+				// calculate weight sum
+				newProduction[1].weightSum = 0;
+				for (var _iterator = newProduction[1].successors, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+					var _ref2;
+
+					if (_isArray) {
+						if (_i >= _iterator.length) break;
+						_ref2 = _iterator[_i++];
+					} else {
+						_i = _iterator.next();
+						if (_i.done) break;
+						_ref2 = _i.value;
+					}
+
+					var s = _ref2;
+
+					newProduction[1].weightSum += s.weight;
+				}
+			}
+
+			var symbol = newProduction[0];
+			if (allowAppendingMultiSuccessors === true && this.productions.has(symbol)) {
 
 				var existingProduction = this.productions.get(symbol);
-				// If existing production results already in an array use this, otherwise
-				// create new array to append to.
-				var productionList = existingProduction[Symbol.iterator] !== undefined && typeof existingProduction !== 'string' && !(existingProduction instanceof String) ? this.productions.get(symbol) : [this.productions.get(symbol)];
-				productionList.push(newProduction[1]);
-				this.productions.set(symbol, productionList);
+				var singleSuccessor = existingProduction.successor;
+				var multiSuccessors = existingProduction.successors;
+
+				if (singleSuccessor && !multiSuccessors) {
+					// replace existing prod with new obj and add previous successor as first elem
+					// to new successors field.
+					existingProduction = { successors: [singleSuccessor] };
+				}
+				existingProduction.successors.push(newProduction[1]);
+				this.productions.set(symbol, existingProduction);
 			} else {
-				this.productions.set(newProduction[0], newProduction[1]);
+				this.productions.set(symbol, newProduction[1]);
 			}
 		};
 
@@ -980,11 +1025,23 @@
 			if (newProductions === undefined) throw new Error('no production specified.');
 			this.clearProductions();
 
-			// TODO: once Object.entries() (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries) is stable, use that in combo instead of awkward for…in.
-			for (var condition in newProductions) {
-				if (newProductions.hasOwnProperty(condition)) {
-					this.setProduction(condition, newProductions[condition], true);
+			for (var _iterator2 = Object.entries(newProductions), _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
+				var _ref4;
+
+				if (_isArray2) {
+					if (_i2 >= _iterator2.length) break;
+					_ref4 = _iterator2[_i2++];
+				} else {
+					_i2 = _iterator2.next();
+					if (_i2.done) break;
+					_ref4 = _i2.value;
 				}
+
+				var _ref3 = _ref4;
+				var from = _ref3[0];
+				var to = _ref3[1];
+
+				this.setProduction(from, to, true);
 			}
 		};
 
@@ -1011,180 +1068,195 @@
 			}
 		};
 
+		//var hasWeight = el => el.weight !== undefined;
 		this.getProductionResult = function (p, index, part, params) {
+			var recursive = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
-			var result = void 0;
 
-			// if p is a function, execute function and append return value
-			if (typeof p === 'function') {
-				result = p({ index: index, currentAxiom: this.axiom, part: part, params: params });
+			var successor = p.successor;
+			var contextSensitive = p.leftCtx !== undefined || p.rightCtx !== undefined;
+			var conditional = p.condition !== undefined;
+			var stochastic = false;
+			var result = false;
+			var precheck = true;
 
-				/* if p is no function and no iterable, then
-	   it should be a string (regular) or object
-	   directly return it then as result */
-			} else if (typeof p === 'string' || p instanceof String || (typeof p === 'undefined' ? 'undefined' : _typeof(p)) === 'object' && p[Symbol.iterator] === undefined) {
-					result = p;
+			// Check if condition is true, only then continue to check left and right contexts
+			if (conditional && p.condition({ index, currentAxiom: this.axiom, part, params }) === false) {
+				precheck = false;
+			} else if (contextSensitive) {
+				if (p.leftCtx !== undefined && p.rightCtx !== undefined) {
+					precheck = this.match({ direction: 'left', match: p.leftCtx, index: index, branchSymbols: '[]' }).result && this.match({ direction: 'right', match: p.rightCtx, index: index, branchSymbols: '[]', ignoredSymbols: ignoredSymbols }).result;
+				} else if (p.leftCtx !== undefined) {
+					precheck = this.match({ direction: 'left', match: p.leftCtx, index: index, branchSymbols: '[]' }).result;
+				} else if (p.rightCtx !== undefined) {
+					precheck = this.match({ direction: 'right', match: p.rightCtx, index: index, branchSymbols: '[]' }).result;
+				}
+			}
 
-					// if p is a list/iterable
-				} else if (p[Symbol.iterator] !== undefined && typeof p !== 'string' && !(p instanceof String)) {
-						/*
-	     go through the list and use
-	     the first valid production in that list. (that returns true)
-	     This assumes, it's a list of functions.
-	     */
-						var _iteratorNormalCompletion = true;
-						var _didIteratorError = false;
-						var _iteratorError = undefined;
+			// If conditions and context don't allow product, keep result = false
+			if (precheck === false) {
+				result = false;
+			}
 
-						try {
-							for (var _iterator = p[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-								var _p = _step.value;
+			// If p has multiple successors
+			else if (p.successors) {
+					// This could be stochastic successors or multiple functions
+					// Tread every element in the list as an individual production object
+					// For stochastic productions (if all prods in the list have a 'weight' property)
+					// Get a random number then pick a production from the list according to their weight
 
-								var _result = void 0;
-								if (_p[Symbol.iterator] !== undefined && typeof _p !== 'string' && !(_p instanceof String)) {
-									// If _p is itself also an Array, recursively get the result.
-									_result = this.getProductionResult(_p);
-								} else {
-									_result = typeof _p === 'function' ? _p({ index: index, currentAxiom: this.axiom, part: part, params: params }) : _p;
-								}
+					var currentWeight, threshWeight;
+					if (p.isStochastic) {
+						threshWeight = Math.random() * p.weightSum;
+						currentWeight = 0;
+					}
+					/*
+	    go through the list and use
+	    the first valid production in that list. (that returns true)
+	    This assumes, it's a list of functions.
+	    No recursion here: no successors inside successors.
+	    */
+					for (var _iterator3 = p.successors, _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
+						var _ref5;
 
-								if (_result !== undefined && _result !== false) {
-									result = _result;
-									break;
-								}
-							}
-						} catch (err) {
-							_didIteratorError = true;
-							_iteratorError = err;
-						} finally {
-							try {
-								if (!_iteratorNormalCompletion && _iterator.return) {
-									_iterator.return();
-								}
-							} finally {
-								if (_didIteratorError) {
-									throw _iteratorError;
-								}
-							}
+						if (_isArray3) {
+							if (_i3 >= _iterator3.length) break;
+							_ref5 = _iterator3[_i3++];
+						} else {
+							_i3 = _iterator3.next();
+							if (_i3.done) break;
+							_ref5 = _i3.value;
+						}
+
+						var _p = _ref5;
+
+						if (p.isStochastic) {
+							currentWeight += _p.weight;
+							if (currentWeight < threshWeight) continue;
+						}
+						// If currentWeight >= thresWeight, a production is choosen stochastically
+						// and evaluated recursively because it , kax also have rightCtx, leftCtx and condition to further inhibit production. This is not standard L-System behaviour though!
+
+						// last true is for recursiv call
+						// TODO: refactor getProductionResult to use an object
+						var _result = this.getProductionResult(_p, index, part, params, true);
+
+						if (_result !== undefined && _result !== false) {
+							result = _result;
+							break;
 						}
 					}
+				}
+				// if successor is a function, execute function and append return value
+				else if (typeof successor === 'function') {
 
-			return result === false ? part : result;
+						result = successor({ index, currentAxiom: this.axiom, part, params });
+					} else {
+						result = successor;
+					}
+
+			if (!result) {
+				// Allow undefined or false results for recursive calls of this func
+				return recursive ? result : part;
+			}
+			return result;
 		};
 
 		this.applyProductions = function () {
 			// a axiom can be a string or an array of objects that contain the key/value 'symbol'
 			var newAxiom = typeof this.axiom === 'string' ? '' : [];
 			var index = 0;
+
 			// iterate all symbols/characters of the axiom and lookup according productions
-			var _iteratorNormalCompletion2 = true;
-			var _didIteratorError2 = false;
-			var _iteratorError2 = undefined;
+			for (var _iterator4 = this.axiom, _isArray4 = Array.isArray(_iterator4), _i4 = 0, _iterator4 = _isArray4 ? _iterator4 : _iterator4[Symbol.iterator]();;) {
+				var _ref6;
 
-			try {
-				for (var _iterator2 = this.axiom[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var part = _step2.value;
-
-					var symbol = part;
-
-					// Stuff for classic parametric L-Systems: get actual symbol and possible parameters
-					// params will be given the production function, if applicable.
-					var params = [];
-					if ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.symbol) symbol = part.symbol;
-					if ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.params) params = part.params;
-
-					var result = part;
-					if (this.productions.has(symbol)) {
-						var p = this.productions.get(symbol);
-						result = this.getProductionResult(p, index, part, params);
-					}
-
-					// finally add result to new axiom
-					if (typeof newAxiom === 'string') {
-						newAxiom += result;
-					} else {
-						// If result is an array, merge result into new axiom instead of pushing.
-						if (result.constructor === Array) {
-							Array.prototype.push.apply(newAxiom, result);
-						} else {
-							newAxiom.push(result);
-						}
-					}
-					index++;
+				if (_isArray4) {
+					if (_i4 >= _iterator4.length) break;
+					_ref6 = _iterator4[_i4++];
+				} else {
+					_i4 = _iterator4.next();
+					if (_i4.done) break;
+					_ref6 = _i4.value;
 				}
 
-				// finally set new axiom and also return for convenience
-			} catch (err) {
-				_didIteratorError2 = true;
-				_iteratorError2 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion2 && _iterator2.return) {
-						_iterator2.return();
-					}
-				} finally {
-					if (_didIteratorError2) {
-						throw _iteratorError2;
-					}
+				var part = _ref6;
+
+
+				// Stuff for classic parametric L-Systems: get actual symbol and possible parameters
+				// params will be given the production function, if applicable.
+
+				var symbol = part.symbol || part;
+				var params = part.params || [];
+
+				var result = part;
+				if (this.productions.has(symbol)) {
+					var p = this.productions.get(symbol);
+					result = this.getProductionResult(p, index, part, params);
 				}
+
+				// Got result. Now add result to new axiom.
+				if (typeof newAxiom === 'string') {
+					newAxiom += result;
+				} else if (result instanceof Array) {
+					// If result is an array, merge result into new axiom instead of pushing.
+					Array.prototype.push.apply(newAxiom, result);
+				} else {
+					newAxiom.push(result);
+				}
+				index++;
 			}
 
+			// finally set new axiom and also return it for convenience.
 			this.axiom = newAxiom;
 			return newAxiom;
 		};
 
-		// iterate n times
 		this.iterate = function () {
-			var n = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
+			var n = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
 
 			this.iterations = n;
 			var lastIteration = void 0;
-			for (var iteration = 0; iteration < n; iteration++, this.iterationCount++) {
+			for (var iteration = 0; iteration < n; iteration++) {
 				lastIteration = this.applyProductions();
 			}
 			return lastIteration;
 		};
 
 		this.final = function () {
-			var _iteratorNormalCompletion3 = true;
-			var _didIteratorError3 = false;
-			var _iteratorError3 = undefined;
+			var index = 0;
+			for (var _iterator5 = this.axiom, _isArray5 = Array.isArray(_iterator5), _i5 = 0, _iterator5 = _isArray5 ? _iterator5 : _iterator5[Symbol.iterator]();;) {
+				var _ref7;
 
-			try {
-				for (var _iterator3 = this.axiom[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-					var part = _step3.value;
-
-
-					// if we have objects for each symbol, (when using parametric L-Systems)
-					// get actual identifiable symbol character
-					var symbol = part;
-					if ((typeof part === 'undefined' ? 'undefined' : _typeof(part)) === 'object' && part.symbol) symbol = part.symbol;
-
-					if (this.finals.has(symbol)) {
-						var finalFunction = this.finals.get(symbol);
-						var typeOfFinalFunction = typeof finalFunction === 'undefined' ? 'undefined' : _typeof(finalFunction);
-						if (typeOfFinalFunction !== 'function') {
-							throw Error('\'' + symbol + '\'' + ' has an object for a final function. But it is __not a function__ but a ' + typeOfFinalFunction + '!');
-						}
-						// execute symbols function
-						finalFunction();
-					} else {
-						// symbol has no final function
-					}
+				if (_isArray5) {
+					if (_i5 >= _iterator5.length) break;
+					_ref7 = _iterator5[_i5++];
+				} else {
+					_i5 = _iterator5.next();
+					if (_i5.done) break;
+					_ref7 = _i5.value;
 				}
-			} catch (err) {
-				_didIteratorError3 = true;
-				_iteratorError3 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion3 && _iterator3.return) {
-						_iterator3.return();
+
+				var part = _ref7;
+
+
+				// if we have objects for each symbol, (when using parametric L-Systems)
+				// get actual identifiable symbol character
+				var symbol = part;
+				if (typeof part === 'object' && part.symbol) symbol = part.symbol;
+
+				if (this.finals.has(symbol)) {
+					var finalFunction = this.finals.get(symbol);
+					var typeOfFinalFunction = typeof finalFunction;
+					if (typeOfFinalFunction !== 'function') {
+						throw Error('\'' + symbol + '\'' + ' has an object for a final function. But it is __not a function__ but a ' + typeOfFinalFunction + '!');
 					}
-				} finally {
-					if (_didIteratorError3) {
-						throw _iteratorError3;
-					}
+					// execute symbols function
+					finalFunction({ index, part });
+				} else {
+					// symbol has no final function
 				}
+				index++;
 			}
 		};
 
@@ -1213,17 +1285,18 @@
 	 	You can just write match({index, ...} instead of match({index: index, ..}) because of new ES6 Object initialization, see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer#New_notations_in_ECMAScript_6
 	 	*/
 
-		this.match = function (_ref2) {
-			var axiom_ = _ref2.axiom_;
-			var match = _ref2.match;
-			var ignoredSymbols = _ref2.ignoredSymbols;
-			var branchSymbols = _ref2.branchSymbols;
-			var index = _ref2.index;
-			var direction = _ref2.direction;
+		this.match = function (_ref8) {
+			var axiom_ = _ref8.axiom_,
+			    match = _ref8.match,
+			    ignoredSymbols = _ref8.ignoredSymbols,
+			    branchSymbols = _ref8.branchSymbols,
+			    index = _ref8.index,
+			    direction = _ref8.direction;
+
 
 			var branchCount = 0;
 			var explicitBranchCount = 0;
-			axiom_ = axiom || this.axiom;
+			axiom_ = axiom_ || this.axiom;
 			if (branchSymbols === undefined) branchSymbols = this.branchSymbols !== undefined ? this.branchSymbols : [];
 			if (ignoredSymbols === undefined) ignoredSymbols = this.ignoredSymbols !== undefined ? this.ignoredSymbols : [];
 			var returnMatchIndices = [];
@@ -1236,6 +1309,7 @@
 			    matchIndexChange = void 0,
 			    matchIndexOverflow = void 0;
 			// set some variables depending on the direction to match
+
 			if (direction === 'right') {
 				loopIndexChange = matchIndexChange = +1;
 				axiomIndex = index + 1;
@@ -1244,11 +1318,8 @@
 				if (branchSymbols.length > 0) {
 					;
 					var _branchSymbols = branchSymbols;
-
-					var _branchSymbols2 = slicedToArray(_branchSymbols, 2);
-
-					branchStart = _branchSymbols2[0];
-					branchEnd = _branchSymbols2[1];
+					branchStart = _branchSymbols[0];
+					branchEnd = _branchSymbols[1];
 				}
 			} else if (direction === 'left') {
 				loopIndexChange = matchIndexChange = -1;
@@ -1257,23 +1328,17 @@
 				matchIndexOverflow = -1;
 				if (branchSymbols.length > 0) {
 					;
-					var _branchSymbols3 = branchSymbols;
-
-					var _branchSymbols4 = slicedToArray(_branchSymbols3, 2);
-
-					branchEnd = _branchSymbols4[0];
-					branchStart = _branchSymbols4[1];
+					var _branchSymbols2 = branchSymbols;
+					branchEnd = _branchSymbols2[0];
+					branchStart = _branchSymbols2[1];
 				}
 			} else {
 				throw Error(direction, 'is not a valid direction for matching.');
 			}
 
 			for (; axiomIndex < axiom_.length && axiomIndex >= 0; axiomIndex += loopIndexChange) {
-				// FIXME: what about objects with .symbol
 
-				var axiomSymbol = axiom_[axiomIndex];
-				// For objects match for objects `symbol`
-				if ((typeof axiomSymbol === 'undefined' ? 'undefined' : _typeof(axiomSymbol)) === 'object') axiomSymbol = axiomSymbol.symbol;
+				var axiomSymbol = axiom_[axiomIndex].symbol || axiom_[axiomIndex];
 				var matchSymbol = match[matchIndex];
 
 				// compare current symbol of axiom with current symbol of match
@@ -1324,23 +1389,19 @@
 			return { result: false, matchIndices: returnMatchIndices };
 		};
 
-		// finally init stuff
-		this.parameters = {
-			allowClassicSyntax: true
-		};
-
 		this.ignoredSymbols = ignoredSymbols;
-		this.setAxiom(axiom);
-		this.productions = new Map();
-
+		this.debug = debug;
 		this.branchSymbols = branchSymbols;
-
+		this.allowClassicSyntax = allowClassicSyntax;
 		this.classicParametricSyntax = classicParametricSyntax;
+		this.forceObjects = forceObjects;
 
+		this.setAxiom(axiom);
+
+		this.clearProductions();
 		if (productions) this.setProductions(productions);
 		if (finals) this.setFinals(finals);
 
-		this.iterationCount = 0;
 		return this;
 	}
 

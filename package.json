@@ -5,12 +5,11 @@
   "main": "index.js",
   "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {
-    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-v0.4.0.min.js examples/libs/aframe.js",
+    "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-master.js examples/libs/aframe.js",
     "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.esnext.js --module-bind worker-loader && cp dist/aframe-lsystem-component.js dist/aframe-lsystem-component.min.js",
     "postpublish": "npm run dist",
     "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
-    "ghpages": "npm run dev && npm run preghpages && ghpages -p gh-pages",
-    "unboil": "node scripts/unboil.js"
+    "ghpages": "npm run dev && npm run preghpages && ghpages -p gh-pages"
   },
   "repository": {
     "type": "git",
@@ -35,7 +34,7 @@
   },
   "homepage": "https://github.com/nylki/aframe-lsystem-component#readme",
   "devDependencies": {
-    "aframe": "^0.4.0",
+    "aframe": "^0.6.1",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
     "babel-preset-es2015": "^6.18.0",
@@ -47,6 +46,6 @@
     "worker-loader": "^0.7.1"
   },
   "dependencies": {
-    "lindenmayer": "^1.2.2"
+    "lindenmayer": "^1.3.0"
   }
 }

@@ -10,17 +10,19 @@ var LSystem;
 // the worker instead of importScripts().
 var LSystemWorker = require("worker?inline!./LSystemWorker.js");
 
-function stripLeadingEnding(s) {
-  let start = 0;
-  let end = s.length - 1;
-  while(/\s/g.test(s[start])) {start++}
-  while(/\s/g.test(s[end])) {end--}
-  return s.substring(start, end + 1);
-}
-
 /**
  * Lindenmayer-System component for A-Frame.
  */
+ 
+ function parseFromTo(value, whiteSpaceReplaceFunc) {
+   let flatResult = value.split(/(\w)\s*:\s*/).filter(part => part.length !== 0);
+   let result = [];
+   for (var i = 0; i < flatResult.length; i+=2) {
+     result.push([flatResult[i], flatResult[i+1]]);
+   }
+   return result;
+ }
+ 
 AFRAME.registerComponent('lsystem', {
   schema: {
 
@@ -32,29 +34,19 @@ AFRAME.registerComponent('lsystem', {
     productions: {
       default: 'F:FF',
       // return an array of production tuples ([[from, to], ['F', 'F+F']])
-      parse: function (value) {
-        return value.split(' ').map(function (splitValue) {
-          return splitValue.split(':');
-        })
-      }
+      parse: (value) => parseFromTo(value).map(([from, to]) => [from, to.replace(/\s/g, '')])
     },
 
-    // A: [blue line, red line, yellow line] B: red line
-
+    // A: blue line, red line, yellow line B: red line
     segmentMixins: {
       type: 'string',
       parse: function (value) {
-
-        let fromIndex = 0;
-        let currentIndex = value.indexOf(':', fromIndex);
+          
         let mixinsForSymbol = new Map();
-        while(currentIndex !== -1) {
-        	fromIndex = currentIndex+1;
-        	let newCurrentIndex = value.indexOf(':', fromIndex);
-        	let symbol = value.slice(currentIndex-1, currentIndex);
-        	let mixinlist = value.slice(currentIndex+1, newCurrentIndex === -1 ? value.length : newCurrentIndex-1).replace(/[\[\]]/g, '').split(',').map(stripLeadingEnding);
-        	mixinsForSymbol.set(symbol, mixinlist)
-        	currentIndex = newCurrentIndex;
+        let result = parseFromTo(value);
+        for (let [from, to] of result) {
+          to = to.replace(/[\[\]]/g, '').split(',');
+          mixinsForSymbol.set(from, to);
         }
         return mixinsForSymbol;
       }
@@ -139,6 +131,10 @@ AFRAME.registerComponent('lsystem', {
     this.segmentLengthFactor = 1.0;
     
     let scaleFactor = self.data.scaleFactor;
+    
+    this.colorIndex = 0;
+    this.lineWidth = 0.0005;
+    this.lineLength = 0.125;
     
     this.LSystem = new LSystem({
       axiom: 'F',
@@ -272,7 +268,7 @@ AFRAME.registerComponent('lsystem', {
       let newSegment = document.createElement('a-entity');
       newSegment.setAttribute('mixin', mixin);
 
-      newSegment.addEventListener('loaded', function (e) {
+      newSegment.addEventListener('loaded', (e) => {
         // Offset child element of object3D, to rotate around end point
         // IMPORTANT: It may change that A-Frame puts objects into a group
 
@@ -282,7 +278,8 @@ AFRAME.registerComponent('lsystem', {
         newSegment.object3D.quaternion.copy(currentQuaternion);
         newSegment.object3D.position.copy(currentPosition);
         newSegment.object3D.scale.copy(currentScale);
-      });
+      },
+      {once: true});
       this.segmentElementGroupsMap.get(symbol + cappedColorIndex).appendChild(newSegment);
 
     } else {
@@ -321,10 +318,9 @@ AFRAME.registerComponent('lsystem', {
     this.workerPromise = new Promise((resolve, reject) => {
 
       this.worker.onmessage = (e) => {
-        console.log(e);
         self.LSystem.setAxiom(e.data.result);
         resolve();
-      }
+      };
     });
 
     this.worker.postMessage(params);
@@ -332,7 +328,6 @@ AFRAME.registerComponent('lsystem', {
   },
 
   updateSegmentMixins: function () {
-    console.log('update mixins');
     let self = this;
 
     this.el.innerHTML = '';
@@ -368,7 +363,7 @@ AFRAME.registerComponent('lsystem', {
       for (let el of this.data.segmentMixins) {
         let [symbol, mixinList] = el;
         // Set final functions for each symbol that has a mixin defined
-        this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)()});
+        this.LSystem.setFinal(symbol, () => {self.pushSegment.bind(self, symbol)();});
 
         // And iterate the MixinList to buffer the segments or calculate segment lengths…
         for (let i = 0; i < mixinList.length; i++) {
@@ -390,6 +385,7 @@ AFRAME.registerComponent('lsystem', {
               // Make sure the geometry is actually unique
               // AFrame sets the same geometry for multiple entities. As we modify
               // the geometry per entity we need to have unique geometry instances.
+              // TODO: hm, maybe try to use instanced geometry and offset on object?
               segmentElGroup.getObject3D('mesh').geometry.dispose();
               segmentObject.geometry = (segmentObject.geometry.clone());
 
@@ -400,16 +396,32 @@ AFRAME.registerComponent('lsystem', {
               if(self.data.mergeGeometries === true) {
 
                 // Offset geometry by half segmentLength to get the rotation point right.
-
                 let translation = self.data.translateAxis.clone().multiplyScalar((segmentLength * self.segmentLengthFactor)/2);
-                segmentObject.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( translation.x, translation.y, translation.z ) );
+                
+                
+                
+                
+                // IMPORTANT!!!
+                // TODO: Try to use pivot object instead of translating geometry
+                // this may help in reusing geometry and not needing to clone it (see above)?
+                // see: https://github.com/mrdoob/three.js/issues/1364
+                //and
+                // see: http://stackoverflow.com/questions/28848863/threejs-how-to-rotate-around-objects-own-center-instead-of-world-center
+                segmentObject.geometry.translate(translation.x, translation.y, translation.z);
+                
+                
+                
+                
+                
+                
+                
                 self.segmentObjects3DMap.set(symbol + mixinColorIndex, segmentObject );
 
               }
 
               segmentElGroup.removeObject3D('mesh');
               resolve();
-            });
+            }, {once: true});
 
 
             if(this.segmentElementGroupsMap.has(symbol + mixinColorIndex)) {
@@ -447,9 +459,7 @@ AFRAME.registerComponent('lsystem', {
       // We push copies of this.transformationSegment on branch symbols inside this array.
       this.stack = [];
 
-      this.colorIndex = 0;
-      this.lineWidth = 0.0005;
-      this.lineLength = 0.125;
+
 
       let angle = this.data.angle;
 

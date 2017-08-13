@@ -1,6 +1,6 @@
 // Require instead of importScripts because we use webpack
 // with worker-loader for compiling source: https://github.com/webpack/worker-loader
-let LSystem = require('lindenmayer');
+import LSystem from 'lindenmayer';
 let lsystem = new LSystem({});
 let timeout = {};
 

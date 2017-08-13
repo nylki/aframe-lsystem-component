@@ -6,7 +6,7 @@
   "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {
     "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-master.js examples/libs/aframe.js",
-    "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.esnext.js --module-bind worker-loader && cp dist/aframe-lsystem-component.js dist/aframe-lsystem-component.min.js",
+    "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.esnext.js --module-bind worker-loader && uglifyjs dist/aframe-lsystem-component.js -o dist/aframe-lsystem-component.min.js --mangle --compress --mangle-props",
     "postpublish": "npm run dist",
     "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
     "ghpages": "npm run dev && npm run preghpages && ghpages -p gh-pages"
@@ -37,13 +37,12 @@
     "aframe": "^0.6.1",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
-    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-env": "^1.6.0",
     "ghpages": "^0.0.8",
-    "inquirer": "^1.0.2",
     "randomcolor": "^0.4.4",
-    "shx": "^0.1.1",
-    "webpack": "^1.14.0",
-    "worker-loader": "^0.7.1"
+    "uglify-es": "^3.0.27",
+    "webpack": "^3.5.4",
+    "worker-loader": "^0.8.1"
   },
   "dependencies": {
     "lindenmayer": "^1.3.0"

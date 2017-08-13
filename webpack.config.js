@@ -1,20 +1,26 @@
+const path = require('path');
 
-    module.exports = {
-        entry: "./index.js",
-        output: {
-            path: './dist/',
-            filename: "aframe-lsystem-component.js"
-        },
-        module: {
-            loaders: [
-                {
-                    test: /\.js$/,
-                    exclude: /(node_modules|dist)/,
+module.exports = {
+    entry: './index.js',
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'aframe-lsystem-component.js'
+    },
+    plugins: [
+
+    ],
+    module: {
+        rules: [
+            {
+                test: /\.js$/,
+                exclude: /(node_modules)/,
+                use: {
                     loader: 'babel-loader',
-                    query: {
-                        presets: ['es2015']
+                    options: {
+                        babelrc: true
                     }
                 }
-            ]
-        }
-    };
+            }
+        ]
+    }
+};

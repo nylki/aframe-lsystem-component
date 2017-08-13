@@ -2,19 +2,19 @@ if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
 
-var LSystem;
+import LSystem from 'lindenmayer';
 
 // As we use webpack for compiling the source, it's used to bundle the
 // web worker into a blob via: https://github.com/webpack/worker-loader
 // Which works without additional changes, besides using `require` inside
 // the worker instead of importScripts().
-var LSystemWorker = require("worker?inline!./LSystemWorker.js");
+var LSystemWorker = require("worker-loader?inline&fallback=false!./LSystemWorker.js");
 
 /**
  * Lindenmayer-System component for A-Frame.
  */
  
- function parseFromTo(value, whiteSpaceReplaceFunc) {
+ function parseFromTo(value) {
    let flatResult = value.split(/(\w)\s*:\s*/).filter(part => part.length !== 0);
    let result = [];
    for (var i = 0; i < flatResult.length; i+=2) {
@@ -101,9 +101,6 @@ AFRAME.registerComponent('lsystem', {
    * Called once when component is attached. Generally for initial setup.
    */
   init: function () {
-    if(LSystem === undefined) {
-      LSystem = require('lindenmayer');
-    }
 
     this.sceneEl = document.querySelector('a-scene');
 

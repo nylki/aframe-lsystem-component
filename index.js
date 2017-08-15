@@ -6,9 +6,9 @@ import LSystem from 'lindenmayer';
 
 // As we use webpack for compiling the source, it's used to bundle the
 // web worker into a blob via: https://github.com/webpack/worker-loader
-// Which works without additional changes, besides using `require` inside
-// the worker instead of importScripts().
-var LSystemWorker = require("worker-loader?inline&fallback=false!./LSystemWorker.js");
+import LSystemWorker from 'worker-loader?inline&fallback=false!./worker.js';
+
+import './primitives/a-lsystem.js';
 
 /**
  * Lindenmayer-System component for A-Frame.
@@ -528,6 +528,3 @@ AFRAME.registerComponent('lsystem', {
   play: function () {
   },
 });
-
-
-require('./primitives/a-lsystem.js');

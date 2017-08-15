@@ -2,6 +2,7 @@
   "presets": [
     ["env", {
       "targets": {
+        "uglify": false,
         "browsers": ["chrome 58", "firefox 53"]
       },
       "modules": false,

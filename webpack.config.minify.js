@@ -7,7 +7,7 @@ module.exports = {
   entry: './index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'aframe-lsystem-component.js'
+    filename: 'aframe-lsystem-component.min.js'
   },
   module: {
     rules: [
@@ -29,6 +29,12 @@ module.exports = {
       minimize: true,
       debug: false
     }),
-
+    new UglifyJSPlugin({
+      uglifyOptions: {
+          compress: {dead_code: true, conditionals: true, evaluate: true, loops: true, unused: true, reduce_vars: true, passes: 1, hoist_funs: true, hoist_vars: true, inline: true, keep_fargs: false, unsafe: true, comparisons: true, unsafe_comps: true},
+          mangle: {keep_fnames: false, reserved: ['LSystem', 'LSystemWorker', 'worker'], toplevel: true},
+          ie8: false
+        }
+    })
   ],
 };

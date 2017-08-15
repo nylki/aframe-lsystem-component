@@ -1,12 +1,12 @@
 {
   "name": "aframe-lsystem-component",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "L-System/LSystem component for A-Frame to draw 3D turtle graphics. Using Lindenmayer as backend.",
-  "main": "index.js",
+  "main": "dist/aframe-lsystem-component.js",
   "browser": "dist/aframe-lsystem-component.min.js",
   "scripts": {
     "dev": "npm run dist; cp dist/aframe-lsystem-component.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-master.js examples/libs/aframe.js",
-    "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.esnext.js --module-bind worker-loader && uglifyjs dist/aframe-lsystem-component.js -o dist/aframe-lsystem-component.min.js --mangle --compress --mangle-props",
+    "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.minify.js --module-bind worker-loader",
     "postpublish": "npm run dist",
     "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
     "ghpages": "npm run dev && npm run preghpages && ghpages -p gh-pages"
@@ -41,6 +41,7 @@
     "ghpages": "^0.0.8",
     "randomcolor": "^0.4.4",
     "uglify-es": "^3.0.27",
+    "uglifyjs-webpack-plugin": "^1.0.0-beta.2",
     "webpack": "^3.5.4",
     "worker-loader": "^0.8.1"
   },

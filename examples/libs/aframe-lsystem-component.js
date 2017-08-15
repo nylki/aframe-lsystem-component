@@ -70,6 +70,10 @@
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lindenmayer__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_worker_loader_inline_fallback_false_worker_js__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_worker_loader_inline_fallback_false_worker_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_worker_loader_inline_fallback_false_worker_js__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__primitives_a_lsystem_js__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__primitives_a_lsystem_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__primitives_a_lsystem_js__);
 if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
@@ -78,15 +82,15 @@ if (typeof AFRAME === 'undefined') {
 
 // As we use webpack for compiling the source, it's used to bundle the
 // web worker into a blob via: https://github.com/webpack/worker-loader
-// Which works without additional changes, besides using `require` inside
-// the worker instead of importScripts().
-var LSystemWorker = __webpack_require__(2);
+
+
+
 
 /**
  * Lindenmayer-System component for A-Frame.
  */
 
-function parseFromTo(value, whiteSpaceReplaceFunc) {
+function parseFromTo(value) {
   let flatResult = value.split(/(\w)\s*:\s*/).filter(part => part.length !== 0);
   let result = [];
   for (var i = 0; i < flatResult.length; i += 2) {
@@ -327,7 +331,7 @@ AFRAME.registerComponent('lsystem', {
   },
 
   initWorker: function () {
-    this.worker = new LSystemWorker();
+    this.worker = new __WEBPACK_IMPORTED_MODULE_1_worker_loader_inline_fallback_false_worker_js___default.a();
   },
 
   pushSegment: function (symbol) {
@@ -582,8 +586,6 @@ AFRAME.registerComponent('lsystem', {
    */
   play: function () {}
 });
-
-__webpack_require__(4);
 
 /***/ }),
 /* 1 */

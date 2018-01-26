@@ -7,7 +7,7 @@ module.exports = {
   entry: './index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'aframe-lsystem-component.js'
+    filename: 'aframe-lsystem-component.min.js'
   },
   module: {
     rules: [
@@ -25,10 +25,6 @@ module.exports = {
     ]
   },
   plugins: [
-    new webpack.LoaderOptionsPlugin({
-      minimize: true,
-      debug: false
-    }),
 
   ],
 };

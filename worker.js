@@ -9,18 +9,18 @@ onmessage = function(e) {
   clearTimeout(timeout);
   timeout = setTimeout(function() {
     
-      lsystem.setAxiom(e.data.axiom);
+    lsystem.setAxiom(e.data.axiom);
       
-      lsystem.clearProductions();
-      for (let p of e.data.productions) {
-        lsystem.setProduction(p[0], p[1]);
-      }
-      lsystem.iterate(e.data.iterations);
+    lsystem.clearProductions();
+    for (let p of e.data.productions) {
+      lsystem.setProduction(p[0], p[1]);
+    }
+    lsystem.iterate(e.data.iterations);
       
-      postMessage({
-        result: lsystem.getString(),
-        initial: e.data
-      });
+    postMessage({
+      result: lsystem.getString(),
+      initial: e.data
+    });
       
   }, 20);
 

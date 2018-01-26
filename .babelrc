@@ -2,9 +2,10 @@
   "presets": [
     ["env", {
       "targets": {
-        "uglify": false,
-        "browsers": ["chrome 58", "firefox 53"]
+        "browsers": ["last 2 Chrome versions", "Firefox ESR"],
+        "uglify": false
       },
+      "exclude": ["transform-regenerator", "es6.set"],
       "modules": false,
       "loose": false
     }]

@@ -25,16 +25,13 @@ module.exports = {
     ]
   },
   plugins: [
-    new webpack.LoaderOptionsPlugin({
-      minimize: true,
-      debug: false
-    }),
     new UglifyJSPlugin({
+      sourceMap: true,
       uglifyOptions: {
-          compress: {dead_code: true, conditionals: true, evaluate: true, loops: true, unused: true, reduce_vars: true, passes: 1, hoist_funs: true, hoist_vars: true, inline: true, keep_fargs: false, unsafe: true, comparisons: true, unsafe_comps: true},
-          mangle: {keep_fnames: false, reserved: ['LSystem', 'LSystemWorker', 'worker'], toplevel: true},
-          ie8: false
-        }
+        compress: {dead_code: true, conditionals: true, evaluate: true, loops: true, unused: true, reduce_vars: true, passes: 1, hoist_funs: true, hoist_vars: true, inline: true, keep_fargs: false, unsafe: true, comparisons: true, unsafe_comps: true},
+        mangle: {keep_fnames: false, reserved: ['LSystem', 'LSystemWorker', 'worker'], toplevel: true},
+        ie8: false
+      }
     })
   ],
 };

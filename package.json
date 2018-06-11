@@ -8,7 +8,7 @@
     "dev": "npm run dist; cp dist/aframe-lsystem-component.min.js examples/libs/aframe-lsystem-component.js; cp node_modules/aframe/dist/aframe-master.js examples/libs/aframe.js",
     "dist": "webpack --module-bind worker-loader && webpack --config webpack.config.minify.js --module-bind worker-loader",
     "postpublish": "npm run dist",
-    "preghpages": "shx rm -rf gh-pages && shx mkdir gh-pages && shx cp -r examples/* gh-pages",
+    "preghpages": "rm -rf gh-pages && mkdir gh-pages && cp -r examples/* gh-pages",
     "ghpages": "npm run dev && npm run preghpages && ghpages -p gh-pages"
   },
   "repository": {
@@ -35,18 +35,17 @@
   "homepage": "https://github.com/nylki/aframe-lsystem-component#readme",
   "devDependencies": {
     "aframe": "^0.7.1",
-    "webpack": "^3.10.0",
-    "babel-core": "^6.26.0",
-    "babel-loader": "^6.2.10",
-    "babel-preset-env": "^1.6.1",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^6.4.1",
+    "babel-preset-env": "^1.7.0",
     "ghpages": "^0.0.8",
     "randomcolor": "^0.4.4",
-    "shx": "^0.2.2",
     "uglify-es": "^3.3.8",
     "uglifyjs-webpack-plugin": "^1.1.6",
+    "webpack": "^3.12.0",
     "worker-loader": "^0.8.1"
   },
   "dependencies": {
-    "lindenmayer": "^1.3.6"
+    "lindenmayer": "^1.3.7"
   }
 }
